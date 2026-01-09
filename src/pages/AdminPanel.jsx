@@ -15,6 +15,7 @@ const AdminPanel = () => {
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [imageUrlInput, setImageUrlInput] = useState("");
+  const [instructions, setInstructions] = useState("");
   const [uploading, setUploading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -48,9 +49,12 @@ const AdminPanel = () => {
     if (!title || !price || !category) return;
 
     setUploading(true);
+
+    // Process images: split by comma, trim whitespace, and filter empty strings
     let imageUrl = editMode ? products.find(p => p.id === editingId)?.imageUrl : "";
     if (imageUrlInput) {
-        imageUrl = imageUrlInput;
+        const urls = imageUrlInput.split(',').map(url => url.trim()).filter(url => url.length > 0);
+        imageUrl = urls.length === 1 ? urls[0] : urls;
     }
 
     try {
@@ -59,6 +63,7 @@ const AdminPanel = () => {
         price,
         description,
         category,
+        instructions,
         imageUrl: imageUrl || "",
       };
 
@@ -95,6 +100,7 @@ const AdminPanel = () => {
     setDescription("");
     setCategory("");
     setImageUrlInput("");
+    setInstructions("");
     setEditMode(false);
     setEditingId(null);
   };
@@ -106,7 +112,15 @@ const AdminPanel = () => {
     setPrice(product.price);
     setDescription(product.description);
     setCategory(product.category);
-    setImageUrlInput(product.imageUrl || "");
+    setInstructions(product.instructions || "");
+
+    // Handle image URL population
+    if (Array.isArray(product.imageUrl)) {
+        setImageUrlInput(product.imageUrl.join(', '));
+    } else {
+        setImageUrlInput(product.imageUrl || "");
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -191,14 +205,26 @@ const AdminPanel = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Image URL</label>
-                <input
-                  type="text"
+                <label className="block text-sm font-medium text-gray-700 mb-1">Instructions to Use</label>
+                <textarea
+                  rows="3"
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                  placeholder="Care instructions, usage guide, etc."
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Images (URLs)</label>
+                <textarea
+                  rows="3"
                   value={imageUrlInput}
                   onChange={(e) => setImageUrlInput(e.target.value)}
-                  placeholder="https://example.com/image.jpg"
-                  className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none text-sm"
+                  placeholder="Enter direct image URLs here, separated by commas for multiple images."
+                  className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none text-sm font-mono"
                 />
+                <p className="text-xs text-gray-400 mt-1">Paste direct links to images. Comma separate for slider.</p>
               </div>
 
               <button
@@ -232,12 +258,21 @@ const AdminPanel = () => {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {products.map((product) => (
+                                {products.map((product) => {
+                                    // Handle array or string image for preview
+                                    let previewImage = "https://placehold.co/100x100";
+                                    if (Array.isArray(product.imageUrl) && product.imageUrl.length > 0) {
+                                        previewImage = product.imageUrl[0];
+                                    } else if (typeof product.imageUrl === 'string' && product.imageUrl) {
+                                        previewImage = product.imageUrl;
+                                    }
+
+                                    return (
                                     <tr key={product.id}>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <div className="h-10 w-10 flex-shrink-0">
-                                                    <img className="h-10 w-10 object-cover" src={product.imageUrl || "https://placehold.co/100x100"} alt="" />
+                                                    <img className="h-10 w-10 object-cover" src={previewImage} alt="" />
                                                 </div>
                                                 <div className="ml-4">
                                                     <div className="text-sm font-medium text-gray-900">{product.title}</div>
@@ -267,7 +302,8 @@ const AdminPanel = () => {
                                             </button>
                                         </td>
                                     </tr>
-                                ))}
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
