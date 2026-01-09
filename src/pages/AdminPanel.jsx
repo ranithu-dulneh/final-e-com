@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db, storage } from "../firebase";
-import { collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { ref, push, set, get, remove, update } from "firebase/database";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Trash2, Edit2, LogOut } from "lucide-react";
 
 const AdminPanel = () => {
@@ -22,9 +22,17 @@ const AdminPanel = () => {
 
   const fetchProducts = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, "products"));
-      const productsData = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-      setProducts(productsData);
+      const snapshot = await get(ref(db, 'products'));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const productsData = Object.keys(data).map(key => ({
+          id: key,
+          ...data[key]
+        }));
+        setProducts(productsData);
+      } else {
+        setProducts([]);
+      }
     } catch (error) {
       console.error("Error fetching products:", error);
     } finally {
@@ -45,28 +53,29 @@ const AdminPanel = () => {
 
     try {
       if (image) {
-        const imageRef = ref(storage, `products/${Date.now()}_${image.name}`);
-        await uploadBytes(imageRef, image);
-        imageUrl = await getDownloadURL(imageRef);
+        const imageReference = storageRef(storage, `products/${Date.now()}_${image.name}`);
+        await uploadBytes(imageReference, image);
+        imageUrl = await getDownloadURL(imageReference);
       }
 
+      const productData = {
+        title,
+        price,
+        description,
+        category,
+        imageUrl: imageUrl || "",
+      };
+
       if (editMode) {
-        await updateDoc(doc(db, "products", editingId), {
-          title,
-          price,
-          description,
-          category,
-          ...(imageUrl && { imageUrl }),
-          updatedAt: new Date()
+        await update(ref(db, `products/${editingId}`), {
+          ...productData,
+          updatedAt: new Date().toISOString()
         });
       } else {
-        await addDoc(collection(db, "products"), {
-          title,
-          price,
-          description,
-          category,
-          imageUrl: imageUrl || "",
-          createdAt: new Date()
+        const newDocRef = push(ref(db, 'products'));
+        await set(newDocRef, {
+          ...productData,
+          createdAt: new Date().toISOString()
         });
       }
 
@@ -106,7 +115,7 @@ const AdminPanel = () => {
   const handleDelete = async (id) => {
     if (window.confirm("Are you sure you want to delete this product?")) {
       try {
-        await deleteDoc(doc(db, "products", id));
+        await remove(ref(db, `products/${id}`));
         fetchProducts();
       } catch (error) {
         console.error("Error deleting product:", error);

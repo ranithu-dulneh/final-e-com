@@ -3,7 +3,7 @@ import Hero from "../components/Hero";
 import ProductGallery from "../components/ProductGallery";
 import Navbar from "../components/Navbar";
 import { db } from "../firebase";
-import { collection, getDocs, limit, query } from "firebase/firestore";
+import { ref, query, limitToFirst, get } from "firebase/database";
 
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -11,10 +11,18 @@ const Home = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const q = query(collection(db, "products"), limit(4));
-        const querySnapshot = await getDocs(q);
-        const productsData = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        setFeaturedProducts(productsData);
+        const q = query(ref(db, "products"), limitToFirst(4));
+        const snapshot = await get(q);
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const productsData = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+          }));
+          setFeaturedProducts(productsData);
+        } else {
+            setFeaturedProducts([]);
+        }
       } catch (error) {
         console.error("Error fetching featured products:", error);
       }
