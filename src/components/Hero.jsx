@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import logo from "../assets/logo.png";
 
 const Hero = () => {
   return (
@@ -7,21 +6,18 @@ const Hero = () => {
       <div className="absolute inset-0 z-0 opacity-10 pattern-grid-lg text-gray-300" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="flex justify-center mb-8">
-            <img src={logo} alt="ZAFAIR Logo" className="h-32 md:h-48 object-contain" />
-        </div>
 
-        <h1 className="text-4xl md:text-6xl font-serif text-black tracking-tight mb-6">
+        <h1 className="text-4xl md:text-6xl font-serif text-black tracking-tight mb-6 animate-fade-in-up">
           Timeless Elegance &<br/>
           <span className="text-gold-600 italic">Exquisite Luxury</span>
         </h1>
 
-        <p className="mt-4 max-w-2xl mx-auto text-xl text-gray-500 font-light mb-10">
+        <p className="mt-4 max-w-2xl mx-auto text-xl text-gray-500 font-light mb-10 animate-fade-in-up animation-delay-200">
           Discover our exclusive collection of hand-crafted jewelry and premium gifts.
           Designed for those who appreciate the finer things in life.
         </p>
 
-        <div className="flex justify-center gap-4">
+        <div className="flex justify-center gap-4 animate-fade-in-up animation-delay-400">
           <Link
             to="/shop"
             className="px-8 py-4 bg-black text-white text-sm uppercase tracking-widest hover:bg-gold-600 transition-colors duration-300"

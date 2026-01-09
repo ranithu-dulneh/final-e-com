@@ -21,6 +21,9 @@ const Navbar = () => {
              <Link to="/about" className="text-gray-900 hover:text-gold-600 transition-colors uppercase tracking-widest text-sm">About</Link>
              <Link to="/contact" className="text-gray-900 hover:text-gold-600 transition-colors uppercase tracking-widest text-sm">Contact</Link>
              <div className="flex items-center space-x-4 border-l pl-6 ml-2 border-gray-200">
+                <Link to="/login" className="text-gray-900 hover:text-gold-600">
+                  <User size={20} />
+                </Link>
                 <button className="text-gray-900 hover:text-gold-600">
                     <ShoppingBag size={20} />
                 </button>

@@ -3,14 +3,15 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Placeholder configuration - User needs to fill these
+// Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "PLACEHOLDER_API_KEY",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "PLACEHOLDER_AUTH_DOMAIN",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "PLACEHOLDER_PROJECT_ID",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "PLACEHOLDER_STORAGE_BUCKET",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "PLACEHOLDER_SENDER_ID",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "PLACEHOLDER_APP_ID"
+  apiKey: "AIzaSyDl10u26UIlQc82BNJNILwCUWfIXqa5854",
+  authDomain: "luxe-2a0f1.firebaseapp.com",
+  databaseURL: "https://luxe-2a0f1-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "luxe-2a0f1",
+  storageBucket: "luxe-2a0f1.firebasestorage.app",
+  messagingSenderId: "871576437088",
+  appId: "1:871576437088:web:9a2f732f0f28df39241e05"
 };
 
 const app = initializeApp(firebaseConfig);
