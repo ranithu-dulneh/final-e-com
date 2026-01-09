@@ -83,7 +83,11 @@ const AdminPanel = () => {
       fetchProducts();
     } catch (error) {
       console.error("Error saving product:", error);
-      alert("Error saving product: " + error.message);
+      if (error.message.includes("PERMISSION_DENIED")) {
+        alert("Permission Denied: You do not have access to write to the database. Please check your Firebase Database Rules in the console.");
+      } else {
+        alert("Error saving product: " + error.message);
+      }
     } finally {
       setUploading(false);
     }
