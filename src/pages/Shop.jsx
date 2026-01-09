@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import ProductGallery from "../components/ProductGallery";
 import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { ref, get } from "firebase/database";
 
 const Shop = () => {
   const [products, setProducts] = useState([]);
@@ -11,9 +11,17 @@ const Shop = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "products"));
-        const productsData = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
-        setProducts(productsData);
+        const snapshot = await get(ref(db, 'products'));
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          const productsData = Object.keys(data).map(key => ({
+            id: key,
+            ...data[key]
+          }));
+          setProducts(productsData);
+        } else {
+          setProducts([]);
+        }
       } catch (error) {
         console.error("Error fetching products:", error);
       } finally {
