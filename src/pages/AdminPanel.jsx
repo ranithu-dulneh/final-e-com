@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { db, storage } from "../firebase";
+import { db } from "../firebase";
 import { ref, push, set, get, remove, update } from "firebase/database";
-import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Trash2, Edit2, LogOut } from "lucide-react";
 
 const AdminPanel = () => {
@@ -15,7 +14,7 @@ const AdminPanel = () => {
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
-  const [image, setImage] = useState(null);
+  const [imageUrlInput, setImageUrlInput] = useState("");
   const [uploading, setUploading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -50,14 +49,11 @@ const AdminPanel = () => {
 
     setUploading(true);
     let imageUrl = editMode ? products.find(p => p.id === editingId)?.imageUrl : "";
+    if (imageUrlInput) {
+        imageUrl = imageUrlInput;
+    }
 
     try {
-      if (image) {
-        const imageReference = storageRef(storage, `products/${Date.now()}_${image.name}`);
-        await uploadBytes(imageReference, image);
-        imageUrl = await getDownloadURL(imageReference);
-      }
-
       const productData = {
         title,
         price,
@@ -98,12 +94,9 @@ const AdminPanel = () => {
     setPrice("");
     setDescription("");
     setCategory("");
-    setImage(null);
+    setImageUrlInput("");
     setEditMode(false);
     setEditingId(null);
-    // Reset file input value
-    const fileInput = document.querySelector('input[type="file"]');
-    if (fileInput) fileInput.value = "";
   };
 
   const handleEdit = (product) => {
@@ -113,6 +106,7 @@ const AdminPanel = () => {
     setPrice(product.price);
     setDescription(product.description);
     setCategory(product.category);
+    setImageUrlInput(product.imageUrl || "");
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -197,11 +191,13 @@ const AdminPanel = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Image</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Image URL</label>
                 <input
-                  type="file"
-                  onChange={(e) => setImage(e.target.files[0])}
-                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-xs file:uppercase file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100"
+                  type="text"
+                  value={imageUrlInput}
+                  onChange={(e) => setImageUrlInput(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                  className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none text-sm"
                 />
               </div>
 
