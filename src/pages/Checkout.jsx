@@ -25,9 +25,10 @@ const Checkout = () => {
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderId, setOrderId] = useState(null);
 
-  const [deliveryCharges, setDeliveryCharges] = useState({ cod: 0, bankDeposit: 0 });
+  // const [deliveryCharges, setDeliveryCharges] = useState({ cod: 0, bankDeposit: 0 }); // Deprecated in favor of per-product shipping
   const [receiptFile, setReceiptFile] = useState(null);
 
+  /* Deprecated: Global delivery charges
   useEffect(() => {
     const fetchSettings = async () => {
       try {
@@ -41,6 +42,7 @@ const Checkout = () => {
     };
     fetchSettings();
   }, []);
+  */
 
   const handleChange = (e) => {
     setFormData({
@@ -57,6 +59,18 @@ const Checkout = () => {
     if (!formData.phone1) {
       setError("Phone number (WhatsApp) is required.");
       return;
+    }
+
+    // Regex for 10-digit number
+    const phoneRegex = /^\d{10}$/;
+    if (!phoneRegex.test(formData.phone1.replace(/\s/g, ''))) {
+        setError("Phone number 1 must be exactly 10 digits.");
+        return;
+    }
+
+    if (formData.phone2 && !phoneRegex.test(formData.phone2.replace(/\s/g, ''))) {
+        setError("Phone number 2 must be exactly 10 digits.");
+        return;
     }
 
     if (cartItems.length === 0) {
@@ -96,15 +110,16 @@ const Checkout = () => {
         receiptUrl = uploadUrl;
       }
 
-      const deliveryCharge = paymentMethod === 'cod' ? deliveryCharges.cod : deliveryCharges.bankDeposit;
-      const finalTotal = total + (deliveryCharge || 0);
+      // Calculate per-product shipping
+      const deliveryCharge = cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0);
+      const finalTotal = total + deliveryCharge;
 
       const orderData = {
         customer: formData,
         items: cartItems,
         totalAmount: finalTotal,
         subtotal: total,
-        deliveryCharge: deliveryCharge || 0,
+        deliveryCharge: deliveryCharge,
         paymentMethod: paymentMethod,
         receiptUrl: receiptUrl,
         status: "Pending",
@@ -145,18 +160,53 @@ const Checkout = () => {
 
       {orderSuccess && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-8 max-w-md w-full text-center shadow-2xl">
+          <div className="bg-white p-8 max-w-lg w-full text-center shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-center mb-4">
               <CheckCircle size={64} className="text-green-500" />
             </div>
             <h2 className="text-2xl font-serif mb-2">Order Placed Successfully!</h2>
-            <p className="text-gray-600 mb-6">
-              Thank you for your purchase. Your order ID is <span className="font-mono font-bold">{orderId ? orderId.slice(-6) : ''}</span>.
-              We will contact you shortly via WhatsApp.
+            <p className="text-gray-600 mb-4">
+              Your order ID is <span className="font-mono font-bold">{orderId ? orderId.slice(-6) : ''}</span>.
             </p>
+
+            <div className="bg-gray-50 p-4 text-left text-sm mb-6 border border-gray-100">
+                <h3 className="font-bold mb-2 uppercase tracking-wide text-xs text-gray-500">Order Summary</h3>
+                <div className="space-y-1 mb-3 pb-3 border-b border-gray-200">
+                    <p><span className="font-medium">Name:</span> {formData.name}</p>
+                    <p><span className="font-medium">Phone:</span> {formData.phone1}</p>
+                    <p><span className="font-medium">Address:</span> {formData.address}, {formData.city}</p>
+                </div>
+                <div className="space-y-2 mb-3 pb-3 border-b border-gray-200">
+                    {cartItems.map((item, idx) => (
+                        <div key={idx} className="flex justify-between">
+                            <span>{item.title} (x{item.quantity})</span>
+                            <span>Rs. {(item.price * item.quantity).toFixed(2)}</span>
+                        </div>
+                    ))}
+                </div>
+                <div className="space-y-1">
+                    <div className="flex justify-between text-gray-600">
+                        <span>Subtotal</span>
+                        <span>Rs. {total.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-600">
+                        <span>Shipping</span>
+                        <span>Rs. {cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0).toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-base pt-2 text-black">
+                        <span>Total</span>
+                        <span>Rs. {(total + cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0)).toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
+
+            <p className="text-gray-800 font-medium mb-6">
+              Our agents will be contacting you through the given phne numbers to update you with the delivery process.
+            </p>
+
             <button
               onClick={() => navigate('/')}
-              className="bg-black text-white px-8 py-3 uppercase tracking-widest hover:bg-gold-600 transition-colors"
+              className="bg-black text-white px-8 py-3 uppercase tracking-widest hover:bg-gold-600 transition-colors w-full"
             >
               Continue Shopping
             </button>
@@ -253,7 +303,7 @@ const Checkout = () => {
                                 <Truck size={18} /> Cash On Delivery
                             </span>
                             {paymentMethod === 'cod' && (
-                                <p className="text-xs text-gray-500 mt-1">Delivery Charge: Rs. {deliveryCharges.cod || 0}</p>
+                                <p className="text-xs text-gray-500 mt-1">Shipping calculated per product.</p>
                             )}
                         </div>
                     </label>
@@ -273,7 +323,7 @@ const Checkout = () => {
                                     <Building size={18} /> Bank Deposit
                                 </span>
                                 {paymentMethod === 'bank' && (
-                                    <p className="text-xs text-gray-500 mt-1">Delivery Charge: Rs. {deliveryCharges.bankDeposit || 0}</p>
+                                    <p className="text-xs text-gray-500 mt-1">Shipping calculated per product.</p>
                                 )}
                             </div>
                         </div>
@@ -333,7 +383,7 @@ const Checkout = () => {
                 disabled={loading}
                 className="w-full bg-black text-white py-4 uppercase tracking-widest hover:bg-gray-800 transition-colors disabled:opacity-50 mt-4"
               >
-                {loading ? 'Processing...' : `Place Order (Rs. ${(total + (paymentMethod === 'cod' ? (deliveryCharges.cod || 0) : (deliveryCharges.bankDeposit || 0))).toFixed(2)})`}
+                {loading ? 'Processing...' : `Place Order (Rs. ${(total + cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0)).toFixed(2)})`}
               </button>
             </form>
           </div>
@@ -373,11 +423,11 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
                     <span>Shipping</span>
-                    <span>Rs. {(paymentMethod === 'cod' ? (deliveryCharges.cod || 0) : (deliveryCharges.bankDeposit || 0)).toFixed(2)}</span>
+                    <span>Rs. {cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-base font-bold text-gray-900 pt-2">
                     <span>Total</span>
-                    <span>Rs. {(total + (paymentMethod === 'cod' ? (deliveryCharges.cod || 0) : (deliveryCharges.bankDeposit || 0))).toFixed(2)}</span>
+                    <span>Rs. {(total + cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0)).toFixed(2)}</span>
                 </div>
              </div>
           </div>
