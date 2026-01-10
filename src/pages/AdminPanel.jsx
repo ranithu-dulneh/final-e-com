@@ -26,6 +26,7 @@ const AdminPanel = () => {
   // Form State
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
+  const [shippingCost, setShippingCost] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [imageUrlInput, setImageUrlInput] = useState("");
@@ -125,6 +126,7 @@ const AdminPanel = () => {
       const productData = {
         title,
         price,
+        shippingCost: shippingCost || 0,
         description,
         category,
         instructions,
@@ -195,6 +197,7 @@ const AdminPanel = () => {
   const resetForm = () => {
     setTitle("");
     setPrice("");
+    setShippingCost("");
     setDescription("");
     setCategory("");
     setImageUrlInput("");
@@ -209,6 +212,7 @@ const AdminPanel = () => {
     setEditingId(product.id);
     setTitle(product.title);
     setPrice(product.price);
+    setShippingCost(product.shippingCost || "");
     setDescription(product.description);
     setCategory(product.category);
     setInstructions(product.instructions || "");
@@ -337,7 +341,7 @@ const AdminPanel = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-3 gap-4">
                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.)</label>
                     <input
@@ -346,6 +350,16 @@ const AdminPanel = () => {
                       step="0.01"
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                    />
+                 </div>
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Shipping (Rs.)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={shippingCost}
+                      onChange={(e) => setShippingCost(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                     />
                  </div>
@@ -447,6 +461,7 @@ const AdminPanel = () => {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shipping</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
@@ -479,6 +494,9 @@ const AdminPanel = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             Rs. {product.price}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            Rs. {product.shippingCost || 0}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button
