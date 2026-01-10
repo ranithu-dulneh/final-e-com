@@ -3,9 +3,12 @@ import Navbar from "../components/Navbar";
 import ProductGallery from "../components/ProductGallery";
 import { db } from "../firebase";
 import { ref, get } from "firebase/database";
+import { Search } from "lucide-react";
 
 const Shop = () => {
   const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -19,8 +22,10 @@ const Shop = () => {
             ...data[key]
           }));
           setProducts(productsData);
+          setFilteredProducts(productsData);
         } else {
           setProducts([]);
+          setFilteredProducts([]);
         }
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -32,6 +37,19 @@ const Shop = () => {
     fetchProducts();
   }, []);
 
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+        setFilteredProducts(products);
+    } else {
+        const query = searchQuery.toLowerCase();
+        const filtered = products.filter(product =>
+            product.title.toLowerCase().includes(query) ||
+            product.category.toLowerCase().includes(query)
+        );
+        setFilteredProducts(filtered);
+    }
+  }, [searchQuery, products]);
+
   return (
     <div className="min-h-screen flex flex-col bg-off-white">
       <Navbar />
@@ -40,6 +58,18 @@ const Shop = () => {
          <div className="max-w-7xl mx-auto px-4 text-center">
             <h1 className="text-4xl font-serif text-gray-900 mb-4">The Collection</h1>
             <p className="text-gray-500 max-w-2xl mx-auto font-light">Explore our complete range of exquisite jewelry and gifts.</p>
+
+            {/* Search Bar */}
+            <div className="max-w-md mx-auto mt-8 relative">
+                <input
+                    type="text"
+                    placeholder="Search for jewelry..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-full focus:outline-none focus:border-gold-500 transition-colors text-sm tracking-wide"
+                />
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            </div>
          </div>
       </div>
 
@@ -49,7 +79,15 @@ const Shop = () => {
                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold-600"></div>
              </div>
          ) : (
-             <ProductGallery products={products} />
+             <>
+                {filteredProducts.length === 0 ? (
+                    <div className="text-center py-12">
+                        <p className="text-gray-500">No products found matching "{searchQuery}".</p>
+                    </div>
+                ) : (
+                    <ProductGallery products={filteredProducts} />
+                )}
+             </>
          )}
       </main>
 
