@@ -1,16 +1,21 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { ref, get } from "firebase/database";
 import Navbar from "../components/Navbar";
 import { ShoppingBag, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
+import { useCart } from "../context/CartContext";
 
 const ProductDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [images, setImages] = useState([]);
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [variants, setVariants] = useState([]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -34,6 +39,13 @@ const ProductDetails = () => {
           }
 
           setImages(imgList);
+
+          // Handle variants
+          if (Array.isArray(data.variants)) {
+             setVariants(data.variants);
+          } else {
+             setVariants([]);
+          }
         } else {
           console.error("Product not found");
         }
@@ -46,6 +58,24 @@ const ProductDetails = () => {
 
     fetchProduct();
   }, [id]);
+
+  const handleAddToCart = () => {
+    if (variants.length > 0 && !selectedVariant) {
+      alert("Please select a variant option.");
+      return;
+    }
+    addToCart(product, selectedVariant);
+    alert("Item added to cart!");
+  };
+
+  const handleBuyNow = () => {
+     if (variants.length > 0 && !selectedVariant) {
+      alert("Please select a variant option.");
+      return;
+    }
+    addToCart(product, selectedVariant);
+    navigate("/checkout");
+  };
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
@@ -137,6 +167,28 @@ const ProductDetails = () => {
               <p className="whitespace-pre-line">{product.description}</p>
             </div>
 
+            {/* Variants Selection */}
+            {variants.length > 0 && (
+                <div>
+                    <h3 className="text-gray-900 font-serif text-sm mb-3">Select Option</h3>
+                    <div className="flex flex-wrap gap-2">
+                        {variants.map((variant, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => setSelectedVariant(variant)}
+                                className={`px-4 py-2 text-sm border transition-colors ${
+                                    selectedVariant === variant
+                                    ? "bg-black text-white border-black"
+                                    : "bg-white text-gray-700 border-gray-300 hover:border-black"
+                                }`}
+                            >
+                                {variant}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {product.instructions && (
               <div className="bg-white p-6 border border-gray-100 rounded-sm">
                 <h3 className="text-gray-900 font-serif text-lg mb-3">Instructions & Care</h3>
@@ -145,10 +197,10 @@ const ProductDetails = () => {
             )}
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-100">
-              <button className="flex-1 bg-black text-white py-4 px-6 uppercase tracking-widest hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+              <button onClick={handleBuyNow} className="flex-1 bg-black text-white py-4 px-6 uppercase tracking-widest hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
                 <CreditCard size={18} /> Buy Now
               </button>
-              <button className="flex-1 border border-black text-black py-4 px-6 uppercase tracking-widest hover:bg-black hover:text-white transition-colors flex items-center justify-center gap-2">
+              <button onClick={handleAddToCart} className="flex-1 border border-black text-black py-4 px-6 uppercase tracking-widest hover:bg-black hover:text-white transition-colors flex items-center justify-center gap-2">
                 <ShoppingBag size={18} /> Add to Cart
               </button>
             </div>
