@@ -211,7 +211,7 @@ const ProductDetails = () => {
 
       <footer className="bg-black text-white py-12 mt-auto">
         <div className="max-w-7xl mx-auto px-4 text-center">
-            <h3 className="font-serif text-2xl mb-4">ZAFAIR</h3>
+            <h3 className="font-serif text-2xl mb-4">ZAFIAR</h3>
             <div className="text-xs text-gray-600 uppercase tracking-widest">
                 © {new Date().getFullYear()} ZAFAIR. All rights reserved.
             </div>
