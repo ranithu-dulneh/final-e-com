@@ -26,9 +26,11 @@ const AdminPanel = () => {
   // Form State
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
-  const [shippingCost, setShippingCost] = useState("");
+  const [shippingCostCod, setShippingCostCod] = useState("");
+  const [shippingCostBank, setShippingCostBank] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
+  const [customCategory, setCustomCategory] = useState("");
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [variantsInput, setVariantsInput] = useState("");
   const [instructions, setInstructions] = useState("");
@@ -122,13 +124,16 @@ const AdminPanel = () => {
         variants = variantsInput.split(',').map(v => v.trim()).filter(v => v.length > 0);
     }
 
+    const finalCategory = category === "Other" ? customCategory : category;
+
     try {
       const productData = {
         title,
         price,
-        shippingCost: shippingCost || 0,
+        shippingCostCod: shippingCostCod || 0,
+        shippingCostBank: shippingCostBank || 0,
         description,
-        category,
+        category: finalCategory,
         instructions,
         imageUrl: imageUrl || "",
         variants: variants
@@ -197,9 +202,11 @@ const AdminPanel = () => {
   const resetForm = () => {
     setTitle("");
     setPrice("");
-    setShippingCost("");
+    setShippingCostCod("");
+    setShippingCostBank("");
     setDescription("");
     setCategory("");
+    setCustomCategory("");
     setImageUrlInput("");
     setVariantsInput("");
     setInstructions("");
@@ -212,9 +219,20 @@ const AdminPanel = () => {
     setEditingId(product.id);
     setTitle(product.title);
     setPrice(product.price);
-    setShippingCost(product.shippingCost || "");
+    setShippingCostCod(product.shippingCostCod || "");
+    setShippingCostBank(product.shippingCostBank || "");
     setDescription(product.description);
-    setCategory(product.category);
+
+    // Check if category is one of the predefined ones
+    const predefinedCategories = ["Necklace", "Bracelets", "Earrings"];
+    if (predefinedCategories.includes(product.category)) {
+        setCategory(product.category);
+        setCustomCategory("");
+    } else {
+        setCategory("Other");
+        setCustomCategory(product.category);
+    }
+
     setInstructions(product.instructions || "");
 
     // Handle variants population
@@ -286,7 +304,7 @@ const AdminPanel = () => {
     <div className="min-h-screen bg-off-white">
       <div className="bg-black text-white px-8 py-4 flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-8">
-            <h1 className="text-xl font-serif">ZAFIAR Admin</h1>
+            <h1 className="text-xl font-serif">ZAFIRA Admin</h1>
             <nav className="flex gap-4">
                 <button
                     onClick={() => setActiveTab('inventory')}
@@ -341,7 +359,7 @@ const AdminPanel = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.)</label>
                     <input
@@ -354,26 +372,56 @@ const AdminPanel = () => {
                     />
                  </div>
                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Shipping (Rs.)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">COD Shipping (Rs.)</label>
                     <input
                       type="number"
                       step="0.01"
-                      value={shippingCost}
-                      onChange={(e) => setShippingCost(e.target.value)}
+                      value={shippingCostCod}
+                      onChange={(e) => setShippingCostCod(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                     />
                  </div>
                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bank Shipping (Rs.)</label>
                     <input
-                      type="text"
+                      type="number"
+                      step="0.01"
+                      value={shippingCostBank}
+                      onChange={(e) => setShippingCostBank(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                    />
+                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <select
                       required
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
-                      placeholder="e.g. Necklace"
-                    />
-                 </div>
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none bg-white"
+                    >
+                        <option value="">Select Category</option>
+                        <option value="Necklace">Necklace</option>
+                        <option value="Bracelets">Bracelets</option>
+                        <option value="Earrings">Earrings</option>
+                        <option value="Other">Add New...</option>
+                    </select>
+                  </div>
+                  {category === "Other" && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">New Category Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={customCategory}
+                          onChange={(e) => setCustomCategory(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                          placeholder="e.g. Rings"
+                        />
+                      </div>
+                  )}
               </div>
 
               <div>
@@ -461,7 +509,7 @@ const AdminPanel = () => {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shipping</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shipping (COD / Bank)</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
@@ -496,7 +544,7 @@ const AdminPanel = () => {
                                             Rs. {product.price}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            Rs. {product.shippingCost || 0}
+                                            Rs. {product.shippingCostCod || 0} / Rs. {product.shippingCostBank || 0}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button
@@ -580,7 +628,7 @@ const AdminPanel = () => {
                                             <p><span className="font-medium">Phone (WA):</span>
                                               <a
                                                 href={`https://wa.me/${order.customer.phone1.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                                                  `Hello ${order.customer.name}, regarding your order #${order.id.slice(-6)} on ZAFIAR.\n\nItems:\n${order.items.map(i => `- ${i.title} (${i.selectedVariant || 'Std'}) x${i.quantity}`).join('\n')}\n\nTotal: Rs. ${parseFloat(order.totalAmount).toFixed(2)}\n\nStatus: ${order.status}`
+                                                  `Hello ${order.customer.name}, regarding your order #${order.id.slice(-6)} on ZAFIRA.\n\nItems:\n${order.items.map(i => `- ${i.title} (${i.selectedVariant || 'Std'}) x${i.quantity}`).join('\n')}\n\nTotal: Rs. ${parseFloat(order.totalAmount).toFixed(2)}\n\nStatus: ${order.status}`
                                                 )}`}
                                                 target="_blank"
                                                 rel="noreferrer"
