@@ -242,7 +242,7 @@ const AdminPanel = () => {
     <div className="min-h-screen bg-off-white">
       <div className="bg-black text-white px-8 py-4 flex justify-between items-center sticky top-0 z-50">
         <div className="flex items-center gap-8">
-            <h1 className="text-xl font-serif">ZAFAIR Admin</h1>
+            <h1 className="text-xl font-serif">ZAFIAR Admin</h1>
             <nav className="flex gap-4">
                 <button
                     onClick={() => setActiveTab('inventory')}
@@ -513,7 +513,18 @@ const AdminPanel = () => {
                                         <h4 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-2">Customer Details</h4>
                                         <div className="text-sm text-gray-800 space-y-1">
                                             <p><span className="font-medium">Name:</span> {order.customer.name}</p>
-                                            <p><span className="font-medium">Phone (WA):</span> <a href={`https://wa.me/${order.customer.phone1.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="text-green-600 hover:underline">{order.customer.phone1}</a></p>
+                                            <p><span className="font-medium">Phone (WA):</span>
+                                              <a
+                                                href={`https://wa.me/${order.customer.phone1.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                                                  `Hello ${order.customer.name}, regarding your order #${order.id.slice(-6)} on ZAFIAR.\n\nItems:\n${order.items.map(i => `- ${i.title} (${i.selectedVariant || 'Std'}) x${i.quantity}`).join('\n')}\n\nTotal: $${parseFloat(order.totalAmount).toFixed(2)}\n\nStatus: ${order.status}`
+                                                )}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-green-600 hover:underline ml-1"
+                                              >
+                                                {order.customer.phone1} (Chat)
+                                              </a>
+                                            </p>
                                             {order.customer.phone2 && <p><span className="font-medium">Phone 2:</span> {order.customer.phone2}</p>}
                                             <p><span className="font-medium">Address:</span> {order.customer.address}, {order.customer.city}</p>
                                             <p><span className="font-medium">Payment:</span> {order.paymentMethod.toUpperCase()}</p>

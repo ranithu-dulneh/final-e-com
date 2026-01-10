@@ -27,7 +27,9 @@ const Navbar = () => {
           </div>
 
           <div className="flex-shrink-0 flex items-center justify-center">
-             <Link to="/" className="font-serif text-3xl font-bold tracking-tighter">ZAFAIR</Link>
+             <Link to="/">
+                <img src="/logo.png" alt="ZAFIAR" className="h-12 w-auto" />
+             </Link>
           </div>
 
           <div className="hidden md:flex space-x-8 items-center">

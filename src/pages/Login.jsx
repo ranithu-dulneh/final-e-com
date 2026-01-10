@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import logo from "../assets/logo.png";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -26,7 +25,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-off-white px-4">
       <div className="max-w-md w-full bg-white p-8 shadow-sm border border-gray-100">
         <div className="text-center mb-8">
-            <img src={logo} alt="ZAFAIR" className="h-16 mx-auto mb-4" />
+            <img src="/logo.png" alt="ZAFIAR" className="h-16 mx-auto mb-4" />
           <h2 className="text-2xl font-serif text-gray-900">Admin Access</h2>
         </div>
 
