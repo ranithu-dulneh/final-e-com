@@ -232,7 +232,7 @@ const Checkout = () => {
                 disabled={loading}
                 className="w-full bg-black text-white py-4 uppercase tracking-widest hover:bg-gray-800 transition-colors disabled:opacity-50 mt-4"
               >
-                {loading ? 'Processing...' : `Place Order ($${total.toFixed(2)})`}
+                {loading ? 'Processing...' : `Place Order (Rs. ${total.toFixed(2)})`}
               </button>
             </form>
           </div>
@@ -257,7 +257,7 @@ const Checkout = () => {
                                 <p className="text-xs text-gray-500">{item.selectedVariant}</p>
                                 <div className="flex justify-between mt-1">
                                     <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-                                    <p className="text-sm font-medium text-gray-900">${(item.price * item.quantity).toFixed(2)}</p>
+                                    <p className="text-sm font-medium text-gray-900">Rs. {(item.price * item.quantity).toFixed(2)}</p>
                                 </div>
                             </div>
                         </div>
@@ -268,7 +268,7 @@ const Checkout = () => {
              <div className="mt-6 pt-4 border-t border-gray-200 space-y-2">
                 <div className="flex justify-between text-sm text-gray-600">
                     <span>Subtotal</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>Rs. {total.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
                     <span>Shipping</span>
@@ -276,7 +276,7 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between text-base font-bold text-gray-900 pt-2">
                     <span>Total</span>
-                    <span>${total.toFixed(2)}</span>
+                    <span>Rs. {total.toFixed(2)}</span>
                 </div>
              </div>
           </div>

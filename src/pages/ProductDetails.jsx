@@ -159,7 +159,7 @@ const ProductDetails = () => {
             <div>
               <p className="text-sm text-gold-600 uppercase tracking-widest font-medium mb-2">{product.category}</p>
               <h1 className="text-4xl font-serif text-gray-900 mb-2">{product.title}</h1>
-              <p className="text-2xl text-gray-500 font-light">${parseFloat(product.price).toFixed(2)}</p>
+              <p className="text-2xl text-gray-500 font-light">Rs. {parseFloat(product.price).toFixed(2)}</p>
             </div>
 
             <div className="prose prose-sm text-gray-600">

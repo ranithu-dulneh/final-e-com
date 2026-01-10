@@ -26,7 +26,6 @@ const Login = () => {
       <div className="max-w-md w-full bg-white p-8 shadow-sm border border-gray-100">
         <div className="text-center mb-8">
             <img src="/logo.png" alt="ZAFIAR" className="h-16 mx-auto mb-4" />
-          <h2 className="text-2xl font-serif text-gray-900">Admin Access</h2>
         </div>
 
         {error && <div className="bg-red-50 text-red-600 p-3 text-sm mb-4 text-center">{error}</div>}

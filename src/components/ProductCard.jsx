@@ -37,7 +37,7 @@ const ProductCard = ({ product }) => {
         <div className="text-center space-y-1">
             <p className="text-xs text-gray-500 uppercase tracking-widest">{category}</p>
             <h3 className="text-lg font-serif text-gray-900">{title}</h3>
-            <p className="text-gold-600 font-medium">${parseFloat(price).toFixed(2)}</p>
+            <p className="text-gold-600 font-medium">Rs. {parseFloat(price).toFixed(2)}</p>
         </div>
         </div>
     </Link>

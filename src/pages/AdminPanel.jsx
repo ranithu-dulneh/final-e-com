@@ -293,7 +293,7 @@ const AdminPanel = () => {
 
               <div className="grid grid-cols-2 gap-4">
                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price ($)</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.)</label>
                     <input
                       type="number"
                       required
@@ -432,7 +432,7 @@ const AdminPanel = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            ${product.price}
+                                            Rs. {product.price}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             <button
@@ -516,7 +516,7 @@ const AdminPanel = () => {
                                             <p><span className="font-medium">Phone (WA):</span>
                                               <a
                                                 href={`https://wa.me/${order.customer.phone1.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                                                  `Hello ${order.customer.name}, regarding your order #${order.id.slice(-6)} on ZAFIAR.\n\nItems:\n${order.items.map(i => `- ${i.title} (${i.selectedVariant || 'Std'}) x${i.quantity}`).join('\n')}\n\nTotal: $${parseFloat(order.totalAmount).toFixed(2)}\n\nStatus: ${order.status}`
+                                                  `Hello ${order.customer.name}, regarding your order #${order.id.slice(-6)} on ZAFIAR.\n\nItems:\n${order.items.map(i => `- ${i.title} (${i.selectedVariant || 'Std'}) x${i.quantity}`).join('\n')}\n\nTotal: Rs. ${parseFloat(order.totalAmount).toFixed(2)}\n\nStatus: ${order.status}`
                                                 )}`}
                                                 target="_blank"
                                                 rel="noreferrer"
@@ -546,12 +546,12 @@ const AdminPanel = () => {
                                                         <p className="font-medium">{item.title}</p>
                                                         <p className="text-gray-500 text-xs">Variant: {item.selectedVariant || 'Default'} | Qty: {item.quantity}</p>
                                                     </div>
-                                                    <p className="font-medium">${(item.price * item.quantity).toFixed(2)}</p>
+                                                    <p className="font-medium">Rs. {(item.price * item.quantity).toFixed(2)}</p>
                                                 </div>
                                             ))}
                                             <div className="border-t pt-2 mt-2 flex justify-between font-bold text-base">
                                                 <span>Total</span>
-                                                <span>${parseFloat(order.totalAmount).toFixed(2)}</span>
+                                                <span>Rs. {parseFloat(order.totalAmount).toFixed(2)}</span>
                                             </div>
                                         </div>
                                     </div>
