@@ -2,11 +2,16 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
 import { ref, push, set, get, remove, update } from "firebase/database";
-import { Trash2, Edit2, LogOut, Package, ShoppingBag, Truck, Check, X, Search } from "lucide-react";
+import { Trash2, Edit2, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings } from "lucide-react";
 
 const AdminPanel = () => {
   const { logout } = useAuth();
-  const [activeTab, setActiveTab] = useState("inventory"); // 'inventory' or 'orders'
+  const [activeTab, setActiveTab] = useState("inventory"); // 'inventory', 'orders', 'settings'
+
+  // Settings State
+  const [codCharge, setCodCharge] = useState("");
+  const [bankCharge, setBankCharge] = useState("");
+  const [loadingSettings, setLoadingSettings] = useState(false);
 
   // Products State
   const [products, setProducts] = useState([]);
@@ -77,8 +82,10 @@ const AdminPanel = () => {
   useEffect(() => {
     if (activeTab === 'inventory') {
       fetchProducts();
-    } else {
+    } else if (activeTab === 'orders') {
       fetchOrders();
+    } else if (activeTab === 'settings') {
+      fetchSettings();
     }
   }, [activeTab]);
 
@@ -149,6 +156,39 @@ const AdminPanel = () => {
       }
     } finally {
       setUploading(false);
+    }
+  };
+
+  const fetchSettings = async () => {
+    setLoadingSettings(true);
+    try {
+      const snapshot = await get(ref(db, 'settings/deliveryCharges'));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        setCodCharge(data.cod || "");
+        setBankCharge(data.bankDeposit || "");
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+    } finally {
+      setLoadingSettings(false);
+    }
+  };
+
+  const handleSaveSettings = async (e) => {
+    e.preventDefault();
+    setLoadingSettings(true);
+    try {
+      await update(ref(db, 'settings/deliveryCharges'), {
+        cod: Number(codCharge),
+        bankDeposit: Number(bankCharge)
+      });
+      alert("Delivery charges updated successfully!");
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      alert("Failed to save settings.");
+    } finally {
+      setLoadingSettings(false);
     }
   };
 
@@ -255,6 +295,12 @@ const AdminPanel = () => {
                     className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'orders' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
                 >
                     <ShoppingBag size={16} /> Orders
+                </button>
+                <button
+                    onClick={() => setActiveTab('settings')}
+                    className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'settings' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <Settings size={16} /> Settings
                 </button>
             </nav>
         </div>
@@ -528,6 +574,15 @@ const AdminPanel = () => {
                                             {order.customer.phone2 && <p><span className="font-medium">Phone 2:</span> {order.customer.phone2}</p>}
                                             <p><span className="font-medium">Address:</span> {order.customer.address}, {order.customer.city}</p>
                                             <p><span className="font-medium">Payment:</span> {order.paymentMethod.toUpperCase()}</p>
+
+                                            {order.receiptUrl && (
+                                              <div className="mt-2">
+                                                <p className="font-medium">Receipt:</p>
+                                                <a href={order.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">
+                                                  View Payment Receipt
+                                                </a>
+                                              </div>
+                                            )}
                                         </div>
                                         {order.trackingInfo && (
                                             <div className="mt-4 bg-blue-50 p-3 text-sm text-blue-800 border border-blue-100">
@@ -549,9 +604,19 @@ const AdminPanel = () => {
                                                     <p className="font-medium">Rs. {(item.price * item.quantity).toFixed(2)}</p>
                                                 </div>
                                             ))}
-                                            <div className="border-t pt-2 mt-2 flex justify-between font-bold text-base">
-                                                <span>Total</span>
-                                                <span>Rs. {parseFloat(order.totalAmount).toFixed(2)}</span>
+                                            <div className="border-t pt-2 mt-2 space-y-1">
+                                                <div className="flex justify-between text-xs text-gray-500">
+                                                  <span>Subtotal</span>
+                                                  <span>Rs. {(order.subtotal || (order.totalAmount - (order.deliveryCharge || 0))).toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between text-xs text-gray-500">
+                                                  <span>Delivery</span>
+                                                  <span>Rs. {parseFloat(order.deliveryCharge || 0).toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between font-bold text-base border-t border-gray-100 pt-1">
+                                                    <span>Total</span>
+                                                    <span>Rs. {parseFloat(order.totalAmount).toFixed(2)}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -561,7 +626,43 @@ const AdminPanel = () => {
                     </div>
                 )}
             </div>
-      )}
+      ) : activeTab === 'settings' ? (
+        // Settings View
+        <div className="bg-white p-6 shadow-sm border border-gray-100 max-w-2xl mx-auto">
+            <h2 className="text-xl font-serif mb-6 border-b pb-2">Delivery Charges</h2>
+            <form onSubmit={handleSaveSettings} className="space-y-6">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Cash on Delivery Charge (Rs.)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      required
+                      value={codCharge}
+                      onChange={(e) => setCodCharge(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Bank Deposit Charge (Rs.)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      required
+                      value={bankCharge}
+                      onChange={(e) => setBankCharge(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                    />
+                </div>
+                <button
+                    type="submit"
+                    disabled={loadingSettings}
+                    className="w-full bg-black text-white py-3 uppercase tracking-widest hover:bg-gold-600 transition-colors disabled:opacity-50"
+                >
+                    {loadingSettings ? 'Saving...' : 'Update Charges'}
+                </button>
+            </form>
+        </div>
+      ) : null}
     </div>
     </div>
   );

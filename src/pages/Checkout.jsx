@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import { db } from "../firebase";
-import { ref, push, set } from "firebase/database";
+import { db, storage } from "../firebase";
+import { ref, push, set, get } from "firebase/database";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import Navbar from "../components/Navbar";
-import { CreditCard, Truck, CheckCircle, AlertCircle } from "lucide-react";
+import { CreditCard, Truck, CheckCircle, AlertCircle, Building, Upload } from "lucide-react";
 
 const Checkout = () => {
   const { cartItems, getCartTotal, clearCart } = useCart();
@@ -24,6 +25,23 @@ const Checkout = () => {
   const [error, setError] = useState(null);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderId, setOrderId] = useState(null);
+
+  const [deliveryCharges, setDeliveryCharges] = useState({ cod: 0, bankDeposit: 0 });
+  const [receiptFile, setReceiptFile] = useState(null);
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const snapshot = await get(ref(db, 'settings/deliveryCharges'));
+        if (snapshot.exists()) {
+          setDeliveryCharges(snapshot.val());
+        }
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -47,14 +65,32 @@ const Checkout = () => {
       return;
     }
 
+    if (paymentMethod === 'bank' && !receiptFile) {
+        setError("Please upload the payment receipt for Bank Deposit.");
+        return;
+    }
+
     setLoading(true);
 
     try {
+      let receiptUrl = "";
+      if (paymentMethod === 'bank' && receiptFile) {
+        const fileRef = storageRef(storage, `receipts/${Date.now()}_${receiptFile.name}`);
+        await uploadBytes(fileRef, receiptFile);
+        receiptUrl = await getDownloadURL(fileRef);
+      }
+
+      const deliveryCharge = paymentMethod === 'cod' ? deliveryCharges.cod : deliveryCharges.bankDeposit;
+      const finalTotal = total + (deliveryCharge || 0);
+
       const orderData = {
         customer: formData,
         items: cartItems,
-        totalAmount: total,
+        totalAmount: finalTotal,
+        subtotal: total,
+        deliveryCharge: deliveryCharge || 0,
         paymentMethod: paymentMethod,
+        receiptUrl: receiptUrl,
         status: "Pending",
         createdAt: new Date().toISOString()
       };
@@ -67,7 +103,7 @@ const Checkout = () => {
       setOrderSuccess(true);
     } catch (err) {
       console.error("Error placing order:", err);
-      setError("Failed to place order. Please try again.");
+      setError("Failed to place order. Please try again. " + err.message);
     } finally {
       setLoading(false);
     }
@@ -196,9 +232,58 @@ const Checkout = () => {
                             onChange={() => setPaymentMethod('cod')}
                             className="text-gold-600 focus:ring-gold-500"
                         />
-                        <span className="ml-3 font-medium text-gray-900 flex items-center gap-2">
-                            <Truck size={18} /> Cash On Delivery
-                        </span>
+                        <div className="ml-3 w-full">
+                            <span className="font-medium text-gray-900 flex items-center gap-2">
+                                <Truck size={18} /> Cash On Delivery
+                            </span>
+                            {paymentMethod === 'cod' && (
+                                <p className="text-xs text-gray-500 mt-1">Delivery Charge: Rs. {deliveryCharges.cod || 0}</p>
+                            )}
+                        </div>
+                    </label>
+
+                    <label className={`flex flex-col p-4 border cursor-pointer transition-colors ${paymentMethod === 'bank' ? 'border-gold-600 bg-gold-50' : 'border-gray-200'}`}>
+                        <div className="flex items-center w-full">
+                            <input
+                                type="radio"
+                                name="payment"
+                                value="bank"
+                                checked={paymentMethod === 'bank'}
+                                onChange={() => setPaymentMethod('bank')}
+                                className="text-gold-600 focus:ring-gold-500"
+                            />
+                            <div className="ml-3 w-full">
+                                <span className="font-medium text-gray-900 flex items-center gap-2">
+                                    <Building size={18} /> Bank Deposit
+                                </span>
+                                {paymentMethod === 'bank' && (
+                                    <p className="text-xs text-gray-500 mt-1">Delivery Charge: Rs. {deliveryCharges.bankDeposit || 0}</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {paymentMethod === 'bank' && (
+                            <div className="mt-4 ml-7 space-y-3">
+                                <div className="bg-white p-3 border border-gray-200 text-sm text-gray-700 space-y-1">
+                                    <p className="font-bold">Bank Details:</p>
+                                    <p>Account Name: <span className="font-medium">RD Liyanwala</span></p>
+                                    <p>Account No: <span className="font-medium">115020367371</span></p>
+                                    <p>Bank: <span className="font-medium">HNB Bank Colpetty</span></p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Upload Receipt</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="file"
+                                            accept="image/*,application/pdf"
+                                            onChange={(e) => setReceiptFile(e.target.files[0])}
+                                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-black file:text-white hover:file:bg-gray-800"
+                                        />
+                                    </div>
+                                    <p className="text-xs text-gray-400 mt-1">Please upload a clear image of the transfer receipt.</p>
+                                </div>
+                            </div>
+                        )}
                     </label>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -232,7 +317,7 @@ const Checkout = () => {
                 disabled={loading}
                 className="w-full bg-black text-white py-4 uppercase tracking-widest hover:bg-gray-800 transition-colors disabled:opacity-50 mt-4"
               >
-                {loading ? 'Processing...' : `Place Order (Rs. ${total.toFixed(2)})`}
+                {loading ? 'Processing...' : `Place Order (Rs. ${(total + (paymentMethod === 'cod' ? (deliveryCharges.cod || 0) : (deliveryCharges.bankDeposit || 0))).toFixed(2)})`}
               </button>
             </form>
           </div>
@@ -272,11 +357,11 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
                     <span>Shipping</span>
-                    <span>Free</span>
+                    <span>Rs. {(paymentMethod === 'cod' ? (deliveryCharges.cod || 0) : (deliveryCharges.bankDeposit || 0)).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-base font-bold text-gray-900 pt-2">
                     <span>Total</span>
-                    <span>Rs. {total.toFixed(2)}</span>
+                    <span>Rs. {(total + (paymentMethod === 'cod' ? (deliveryCharges.cod || 0) : (deliveryCharges.bankDeposit || 0))).toFixed(2)}</span>
                 </div>
              </div>
           </div>
