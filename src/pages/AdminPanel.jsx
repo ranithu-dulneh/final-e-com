@@ -504,7 +504,7 @@ const AdminPanel = () => {
             </div>
         </div>
       </div>
-      ) : (
+      ) : activeTab === 'orders' ? (
             // Orders View
             <div className="bg-white p-6 shadow-sm border border-gray-100">
                 <h2 className="text-xl font-serif mb-6 border-b pb-2">Orders ({orders.length})</h2>
