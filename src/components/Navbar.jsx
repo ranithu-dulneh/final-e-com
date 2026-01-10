@@ -37,17 +37,17 @@ const Navbar = () => {
                 <Link to="/login" className="text-gray-900 hover:text-gold-600">
                   <User size={20} />
                 </Link>
-                <button className="text-gray-900 hover:text-gold-600">
+                <Link to="/cart" className="text-gray-900 hover:text-gold-600">
                     <ShoppingBag size={20} />
-                </button>
+                </Link>
              </div>
           </div>
 
           {/* Mobile Cart Icon (visible on mobile next to logo usually, or keep it right) */}
           <div className="flex items-center md:hidden">
-             <button className="text-gray-900 hover:text-gold-600">
+             <Link to="/cart" className="text-gray-900 hover:text-gold-600">
                 <ShoppingBag size={24} />
-             </button>
+             </Link>
           </div>
         </div>
       </div>

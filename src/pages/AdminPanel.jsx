@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
 import { ref, push, set, get, remove, update } from "firebase/database";
-import { Trash2, Edit2, LogOut, Package, ShoppingBag, Truck, Check, X } from "lucide-react";
+import { Trash2, Edit2, LogOut, Package, ShoppingBag, Truck, Check, X, Search } from "lucide-react";
 
 const AdminPanel = () => {
   const { logout } = useAuth();
@@ -10,6 +10,8 @@ const AdminPanel = () => {
 
   // Products State
   const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
 
   // Orders State
@@ -39,8 +41,10 @@ const AdminPanel = () => {
           ...data[key]
         }));
         setProducts(productsData);
+        setFilteredProducts(productsData);
       } else {
         setProducts([]);
+        setFilteredProducts([]);
       }
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -77,6 +81,19 @@ const AdminPanel = () => {
       fetchOrders();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+        setFilteredProducts(products);
+    } else {
+        const query = searchTerm.toLowerCase();
+        const filtered = products.filter(product =>
+            product.title.toLowerCase().includes(query) ||
+            product.category.toLowerCase().includes(query)
+        );
+        setFilteredProducts(filtered);
+    }
+  }, [searchTerm, products]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -358,7 +375,20 @@ const AdminPanel = () => {
         {/* Product List */}
         <div className="lg:col-span-2">
             <div className="bg-white p-6 shadow-sm border border-gray-100">
-                <h2 className="text-xl font-serif mb-6 border-b pb-2">Inventory ({products.length})</h2>
+                <div className="flex flex-col sm:flex-row justify-between items-center mb-6 border-b pb-4 gap-4">
+                    <h2 className="text-xl font-serif">Inventory ({products.length})</h2>
+                    <div className="relative w-full sm:w-64">
+                        <input
+                            type="text"
+                            placeholder="Search inventory..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-sm text-sm focus:outline-none focus:border-gold-500"
+                        />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={14} />
+                    </div>
+                </div>
+
                 {loading ? (
                     <p className="text-center text-gray-500">Loading inventory...</p>
                 ) : products.length === 0 ? (
@@ -375,7 +405,7 @@ const AdminPanel = () => {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {products.map((product) => {
+                                {filteredProducts.map((product) => {
                                     // Handle array or string image for preview
                                     let previewImage = "https://placehold.co/100x100";
                                     if (Array.isArray(product.imageUrl) && product.imageUrl.length > 0) {
