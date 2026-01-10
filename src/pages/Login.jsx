@@ -25,7 +25,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-off-white px-4">
       <div className="max-w-md w-full bg-white p-8 shadow-sm border border-gray-100">
         <div className="text-center mb-8">
-            <img src="/logo.png" alt="ZAFIAR" className="h-16 mx-auto mb-4" />
+            <img src="/logo.png" alt="ZAFIRA" className="h-16 mx-auto mb-4" />
         </div>
 
         {error && <div className="bg-red-50 text-red-600 p-3 text-sm mb-4 text-center">{error}</div>}

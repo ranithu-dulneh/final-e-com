@@ -78,40 +78,20 @@ const Checkout = () => {
       return;
     }
 
-    if (paymentMethod === 'bank' && !receiptFile) {
-        setError("Please upload the payment receipt for Bank Deposit.");
-        return;
-    }
-
     setLoading(true);
 
     try {
       let receiptUrl = "";
-      if (paymentMethod === 'bank' && receiptFile) {
-        // Upload to Oracle Object Storage via PAR
-        const filename = `${Date.now()}_${receiptFile.name.replace(/\s+/g, '_')}`;
-        const ociParUrl = "https://objectstorage.ap-singapore-1.oraclecloud.com/p/cTv-DvMhEIP5UXdgULCcxXSfZ_R9RxFdvuYbD6UXiH-nrIBRVbBCC3Ap1HAsBAak/n/axhhgsj4x70p/b/Bank_Slips/o/";
-        const uploadUrl = `${ociParUrl}${filename}`;
+      // Receipt upload removed as requested.
 
-        const uploadResponse = await fetch(uploadUrl, {
-            method: 'PUT',
-            body: receiptFile,
-            headers: {
-               // Usually Content-Type is helpful but PARs might be permissive or strict.
-               // 'Content-Type': receiptFile.type
-            }
-        });
+      // Calculate per-product shipping based on method
+      const deliveryCharge = cartItems.reduce((acc, item) => {
+          const cost = paymentMethod === 'cod'
+            ? (Number(item.shippingCostCod) || 0)
+            : (Number(item.shippingCostBank) || 0);
+          return acc + (cost * item.quantity);
+      }, 0);
 
-        if (!uploadResponse.ok) {
-             throw new Error("Failed to upload receipt to external storage.");
-        }
-
-        // If successful, the receipt URL is the upload URL (or we can assume so)
-        receiptUrl = uploadUrl;
-      }
-
-      // Calculate per-product shipping
-      const deliveryCharge = cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0);
       const finalTotal = total + deliveryCharge;
 
       const orderData = {
@@ -121,7 +101,7 @@ const Checkout = () => {
         subtotal: total,
         deliveryCharge: deliveryCharge,
         paymentMethod: paymentMethod,
-        receiptUrl: receiptUrl,
+        receiptUrl: "", // Receipt upload removed
         status: "Pending",
         createdAt: new Date().toISOString()
       };
@@ -164,7 +144,7 @@ const Checkout = () => {
             <div className="flex justify-center mb-4">
               <CheckCircle size={64} className="text-green-500" />
             </div>
-            <h2 className="text-2xl font-serif mb-2">Order Placed Successfully!</h2>
+            <h2 className="text-2xl font-serif mb-2">Your order is accepted</h2>
             <p className="text-gray-600 mb-4">
               Your order ID is <span className="font-mono font-bold">{orderId ? orderId.slice(-6) : ''}</span>.
             </p>
@@ -191,11 +171,18 @@ const Checkout = () => {
                     </div>
                     <div className="flex justify-between text-gray-600">
                         <span>Shipping</span>
-                        <span>Rs. {cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0).toFixed(2)}</span>
+                        {/* We use the deliveryCharge calculated during order placement logic if available, but here we can re-calculate or just use what we displayed */}
+                        <span>Rs. {cartItems.reduce((acc, item) => {
+                            const cost = paymentMethod === 'cod' ? (Number(item.shippingCostCod) || 0) : (Number(item.shippingCostBank) || 0);
+                            return acc + (cost * item.quantity);
+                        }, 0).toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between font-bold text-base pt-2 text-black">
                         <span>Total</span>
-                        <span>Rs. {(total + cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0)).toFixed(2)}</span>
+                        <span>Rs. {(total + cartItems.reduce((acc, item) => {
+                            const cost = paymentMethod === 'cod' ? (Number(item.shippingCostCod) || 0) : (Number(item.shippingCostBank) || 0);
+                            return acc + (cost * item.quantity);
+                        }, 0)).toFixed(2)}</span>
                     </div>
                 </div>
             </div>
@@ -303,7 +290,7 @@ const Checkout = () => {
                                 <Truck size={18} /> Cash On Delivery
                             </span>
                             {paymentMethod === 'cod' && (
-                                <p className="text-xs text-gray-500 mt-1">Shipping calculated per product.</p>
+                                <p className="text-xs text-gray-500 mt-1">Shipping calculated per product (COD rates apply).</p>
                             )}
                         </div>
                     </label>
@@ -323,7 +310,7 @@ const Checkout = () => {
                                     <Building size={18} /> Bank Deposit
                                 </span>
                                 {paymentMethod === 'bank' && (
-                                    <p className="text-xs text-gray-500 mt-1">Shipping calculated per product.</p>
+                                    <p className="text-xs text-gray-500 mt-1">Shipping calculated per product (Bank rates apply).</p>
                                 )}
                             </div>
                         </div>
@@ -336,17 +323,10 @@ const Checkout = () => {
                                     <p>Account No: <span className="font-medium">115020367371</span></p>
                                     <p>Bank: <span className="font-medium">HNB Bank Colpetty</span></p>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Upload Receipt</label>
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="file"
-                                            accept="image/*,application/pdf"
-                                            onChange={(e) => setReceiptFile(e.target.files[0])}
-                                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:border-0 file:text-sm file:font-semibold file:bg-black file:text-white hover:file:bg-gray-800"
-                                        />
-                                    </div>
-                                    <p className="text-xs text-gray-400 mt-1">Please upload a clear image of the transfer receipt.</p>
+                                <div className="bg-blue-50 p-4 border border-blue-100 text-sm text-blue-900">
+                                    <p className="font-bold mb-1">Instructions:</p>
+                                    <p className="mb-2">Please use your <span className="font-bold">Mobile Number</span> as the reference for the transaction.</p>
+                                    <p>For more details contact <span className="font-bold">070 7506269</span> through WhatsApp.</p>
                                 </div>
                             </div>
                         )}
@@ -383,7 +363,10 @@ const Checkout = () => {
                 disabled={loading}
                 className="w-full bg-black text-white py-4 uppercase tracking-widest hover:bg-gray-800 transition-colors disabled:opacity-50 mt-4"
               >
-                {loading ? 'Processing...' : `Place Order (Rs. ${(total + cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0)).toFixed(2)})`}
+                {loading ? 'Processing...' : `Place Order (Rs. ${(total + cartItems.reduce((acc, item) => {
+                    const cost = paymentMethod === 'cod' ? (Number(item.shippingCostCod) || 0) : (Number(item.shippingCostBank) || 0);
+                    return acc + (cost * item.quantity);
+                }, 0)).toFixed(2)})`}
               </button>
             </form>
           </div>
@@ -423,11 +406,17 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
                     <span>Shipping</span>
-                    <span>Rs. {cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0).toFixed(2)}</span>
+                    <span>Rs. {cartItems.reduce((acc, item) => {
+                        const cost = paymentMethod === 'cod' ? (Number(item.shippingCostCod) || 0) : (Number(item.shippingCostBank) || 0);
+                        return acc + (cost * item.quantity);
+                    }, 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-base font-bold text-gray-900 pt-2">
                     <span>Total</span>
-                    <span>Rs. {(total + cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0)).toFixed(2)}</span>
+                    <span>Rs. {(total + cartItems.reduce((acc, item) => {
+                        const cost = paymentMethod === 'cod' ? (Number(item.shippingCostCod) || 0) : (Number(item.shippingCostBank) || 0);
+                        return acc + (cost * item.quantity);
+                    }, 0)).toFixed(2)}</span>
                 </div>
              </div>
           </div>

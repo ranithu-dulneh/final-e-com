@@ -107,11 +107,11 @@ const Cart = () => {
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping</span>
-                  <span>Rs. {cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0).toFixed(2)}</span>
+                  <span className="text-xs">Calculated at Checkout</span>
                 </div>
                 <div className="flex justify-between text-gray-900 font-medium text-lg pt-4 border-t border-gray-100">
-                  <span>Total</span>
-                  <span>Rs. {(total + cartItems.reduce((acc, item) => acc + ((Number(item.shippingCost) || 0) * item.quantity), 0)).toFixed(2)}</span>
+                  <span>Subtotal</span>
+                  <span>Rs. {total.toFixed(2)}</span>
                 </div>
               </div>
 
