@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
-import { db, storage } from "../firebase";
+import { db } from "../firebase";
 import { ref, push, set, get } from "firebase/database";
-import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import Navbar from "../components/Navbar";
 import { CreditCard, Truck, CheckCircle, AlertCircle, Building, Upload } from "lucide-react";
 
@@ -75,9 +74,26 @@ const Checkout = () => {
     try {
       let receiptUrl = "";
       if (paymentMethod === 'bank' && receiptFile) {
-        const fileRef = storageRef(storage, `receipts/${Date.now()}_${receiptFile.name}`);
-        await uploadBytes(fileRef, receiptFile);
-        receiptUrl = await getDownloadURL(fileRef);
+        // Upload to Oracle Object Storage via PAR
+        const filename = `${Date.now()}_${receiptFile.name.replace(/\s+/g, '_')}`;
+        const ociParUrl = "https://objectstorage.ap-singapore-1.oraclecloud.com/p/cTv-DvMhEIP5UXdgULCcxXSfZ_R9RxFdvuYbD6UXiH-nrIBRVbBCC3Ap1HAsBAak/n/axhhgsj4x70p/b/Bank_Slips/o/";
+        const uploadUrl = `${ociParUrl}${filename}`;
+
+        const uploadResponse = await fetch(uploadUrl, {
+            method: 'PUT',
+            body: receiptFile,
+            headers: {
+               // Usually Content-Type is helpful but PARs might be permissive or strict.
+               // 'Content-Type': receiptFile.type
+            }
+        });
+
+        if (!uploadResponse.ok) {
+             throw new Error("Failed to upload receipt to external storage.");
+        }
+
+        // If successful, the receipt URL is the upload URL (or we can assume so)
+        receiptUrl = uploadUrl;
       }
 
       const deliveryCharge = paymentMethod === 'cod' ? deliveryCharges.cod : deliveryCharges.bankDeposit;
