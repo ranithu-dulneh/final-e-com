@@ -22,8 +22,6 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [orderSuccess, setOrderSuccess] = useState(false);
-  const [orderId, setOrderId] = useState(null);
 
   // const [deliveryCharges, setDeliveryCharges] = useState({ cod: 0, bankDeposit: 0 }); // Deprecated in favor of per-product shipping
   const [receiptFile, setReceiptFile] = useState(null);
@@ -110,8 +108,7 @@ const Checkout = () => {
       await set(newOrderRef, orderData);
 
       clearCart();
-      setOrderId(newOrderRef.key);
-      setOrderSuccess(true);
+      navigate('/order-confirmation', { state: { orderId: newOrderRef.key, orderData } });
     } catch (err) {
       console.error("Error placing order:", err);
       setError("Failed to place order. Please try again. " + err.message);
@@ -137,69 +134,6 @@ const Checkout = () => {
   return (
     <div className="min-h-screen bg-off-white relative">
       <Navbar />
-
-      {orderSuccess && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-8 max-w-lg w-full text-center shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-center mb-4">
-              <CheckCircle size={64} className="text-green-500" />
-            </div>
-            <h2 className="text-2xl font-serif mb-2">Your order is accepted</h2>
-            <p className="text-gray-600 mb-4">
-              Your order ID is <span className="font-mono font-bold">{orderId ? orderId.slice(-6) : ''}</span>.
-            </p>
-
-            <div className="bg-gray-50 p-4 text-left text-sm mb-6 border border-gray-100">
-                <h3 className="font-bold mb-2 uppercase tracking-wide text-xs text-gray-500">Order Summary</h3>
-                <div className="space-y-1 mb-3 pb-3 border-b border-gray-200">
-                    <p><span className="font-medium">Name:</span> {formData.name}</p>
-                    <p><span className="font-medium">Phone:</span> {formData.phone1}</p>
-                    <p><span className="font-medium">Address:</span> {formData.address}, {formData.city}</p>
-                </div>
-                <div className="space-y-2 mb-3 pb-3 border-b border-gray-200">
-                    {cartItems.map((item, idx) => (
-                        <div key={idx} className="flex justify-between">
-                            <span>{item.title} (x{item.quantity})</span>
-                            <span>Rs. {(item.price * item.quantity).toFixed(2)}</span>
-                        </div>
-                    ))}
-                </div>
-                <div className="space-y-1">
-                    <div className="flex justify-between text-gray-600">
-                        <span>Subtotal</span>
-                        <span>Rs. {total.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-gray-600">
-                        <span>Shipping</span>
-                        {/* We use the deliveryCharge calculated during order placement logic if available, but here we can re-calculate or just use what we displayed */}
-                        <span>Rs. {cartItems.reduce((acc, item) => {
-                            const cost = paymentMethod === 'cod' ? (Number(item.shippingCostCod) || 0) : (Number(item.shippingCostBank) || 0);
-                            return acc + (cost * item.quantity);
-                        }, 0).toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between font-bold text-base pt-2 text-black">
-                        <span>Total</span>
-                        <span>Rs. {(total + cartItems.reduce((acc, item) => {
-                            const cost = paymentMethod === 'cod' ? (Number(item.shippingCostCod) || 0) : (Number(item.shippingCostBank) || 0);
-                            return acc + (cost * item.quantity);
-                        }, 0)).toFixed(2)}</span>
-                    </div>
-                </div>
-            </div>
-
-            <p className="text-gray-800 font-medium mb-6">
-              Our agents will be contacting you through the given phne numbers to update you with the delivery process.
-            </p>
-
-            <button
-              onClick={() => navigate('/')}
-              className="bg-black text-white px-8 py-3 uppercase tracking-widest hover:bg-gold-600 transition-colors w-full"
-            >
-              Continue Shopping
-            </button>
-          </div>
-        </div>
-      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-3xl font-serif text-gray-900 mb-8">Checkout</h1>
