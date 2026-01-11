@@ -8,6 +8,9 @@ import AdminPanel from "./pages/AdminPanel";
 import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import OrderConfirmation from "./pages/OrderConfirmation";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -21,8 +24,9 @@ function App() {
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
-          <Route path="/about" element={<div className="text-center py-20">About Page Coming Soon</div>} />
-          <Route path="/contact" element={<div className="text-center py-20">Contact Page Coming Soon</div>} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/order-confirmation" element={<OrderConfirmation />} />
           <Route path="/login" element={<Login />} />
             <Route
               path="/admin"
