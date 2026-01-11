@@ -2,7 +2,37 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
 import { ref, push, set, get, remove, update } from "firebase/database";
-import { Trash2, Edit2, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings } from "lucide-react";
+import { Trash2, Edit2, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle } from "lucide-react";
+
+const STATUSES = [
+  "Pending",
+  "Order confirmed",
+  "Dispatched",
+  "Arrived at the destination",
+  "Out for delivery",
+  "Delivered"
+];
+
+const getWhatsAppMessage = (status, order, tracking) => {
+  const name = order.customer.name;
+  const id = order.id.slice(-6);
+  const trackInfo = tracking || "N/A";
+
+  switch(status) {
+    case "Order confirmed":
+      return `Hello ${name}, your order #${id} has been confirmed! We will dispatch it soon.`;
+    case "Dispatched":
+      return `Hello ${name}, your order #${id} has been dispatched. Tracking No: ${trackInfo}. You can track your package.`;
+    case "Arrived at the destination":
+      return `Hello ${name}, your order #${id} has arrived at the destination hub.`;
+    case "Out for delivery":
+      return `Hello ${name}, your order #${id} is out for delivery today! Please be ready to receive it.`;
+    case "Delivered":
+      return `Hello ${name}, your order #${id} has been delivered. Thank you for shopping with ZAFIRA!`;
+    default:
+      return `Hello ${name}, there is an update on your order #${id}. Current Status: ${status}.`;
+  }
+};
 
 const AdminPanel = () => {
   const { logout } = useAuth();
@@ -22,6 +52,7 @@ const AdminPanel = () => {
   // Orders State
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [orderUpdates, setOrderUpdates] = useState({}); // Stores local edits for orders { id: { status, tracking } }
 
   // Form State
   const [title, setTitle] = useState("");
@@ -72,6 +103,17 @@ const AdminPanel = () => {
           ...data[key]
         })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         setOrders(ordersData);
+
+        // Initialize local state for edits
+        const initialUpdates = {};
+        ordersData.forEach(order => {
+            initialUpdates[order.id] = {
+                status: order.status || "Pending",
+                tracking: order.trackingInfo || ""
+            };
+        });
+        setOrderUpdates(initialUpdates);
+
       } else {
         setOrders([]);
       }
@@ -263,8 +305,48 @@ const AdminPanel = () => {
     }
   };
 
-  const handleOrderAction = async (orderId, action, currentTracking = "") => {
-    if (action === 'delete') {
+  const handleUpdateChange = (orderId, field, value) => {
+    setOrderUpdates(prev => ({
+        ...prev,
+        [orderId]: {
+            ...prev[orderId],
+            [field]: value
+        }
+    }));
+  };
+
+  const handleUpdateOrder = async (orderId) => {
+      const updates = orderUpdates[orderId];
+      if (!updates) return;
+
+      const order = orders.find(o => o.id === orderId);
+      if (!order) return;
+
+      if (window.confirm(`Update order #${orderId.slice(-6)} status to "${updates.status}" and notify customer?`)) {
+          try {
+              await update(ref(db, `orders/${orderId}`), {
+                  status: updates.status,
+                  trackingInfo: updates.tracking,
+                  updatedAt: new Date().toISOString()
+              });
+
+              // Construct WhatsApp Message
+              const message = getWhatsAppMessage(updates.status, order, updates.tracking);
+              const phone = order.customer.phone1.replace(/[^0-9]/g, '');
+              const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+              // Open WhatsApp
+              window.open(url, '_blank');
+
+              fetchOrders();
+          } catch (error) {
+              console.error("Error updating order:", error);
+              alert("Failed to update order.");
+          }
+      }
+  };
+
+  const handleDeleteOrder = async (orderId) => {
       if (window.confirm("Are you sure you want to delete this order?")) {
         try {
           await remove(ref(db, `orders/${orderId}`));
@@ -273,31 +355,6 @@ const AdminPanel = () => {
           console.error("Error deleting order:", error);
         }
       }
-    } else if (action === 'confirm') {
-      try {
-        await update(ref(db, `orders/${orderId}`), {
-          status: 'Confirmed',
-          updatedAt: new Date().toISOString()
-        });
-        fetchOrders();
-      } catch (error) {
-        console.error("Error confirming order:", error);
-      }
-    } else if (action === 'shipping') {
-      const tracking = window.prompt("Enter tracking information / notes:", currentTracking || "");
-      if (tracking !== null) {
-        try {
-          await update(ref(db, `orders/${orderId}`), {
-            status: 'Shipped',
-            trackingInfo: tracking,
-            updatedAt: new Date().toISOString()
-          });
-          fetchOrders();
-        } catch (error) {
-          console.error("Error updating shipping:", error);
-        }
-      }
-    }
   };
 
   return (
@@ -580,7 +637,10 @@ const AdminPanel = () => {
                     <p className="text-center text-gray-500 py-8">No orders found.</p>
                 ) : (
                     <div className="space-y-6">
-                        {orders.map((order) => (
+                        {orders.map((order) => {
+                            const updates = orderUpdates[order.id] || { status: order.status, tracking: order.trackingInfo || "" };
+
+                            return (
                             <div key={order.id} className="border border-gray-200 p-6 rounded-sm">
                                 <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-4 pb-4 border-b border-gray-100">
                                     <div>
@@ -588,7 +648,8 @@ const AdminPanel = () => {
                                             <h3 className="font-serif text-lg font-bold">Order #{order.id.slice(-6)}</h3>
                                             <span className={`px-2 py-1 text-xs font-bold rounded-full uppercase tracking-wider ${
                                                 order.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
-                                                order.status === 'Shipped' ? 'bg-blue-100 text-blue-800' :
+                                                order.status === 'Shipped' || order.status === 'Dispatched' ? 'bg-blue-100 text-blue-800' :
+                                                order.status === 'Delivered' ? 'bg-gray-800 text-white' :
                                                 'bg-yellow-100 text-yellow-800'
                                             }`}>
                                                 {order.status}
@@ -596,23 +657,10 @@ const AdminPanel = () => {
                                         </div>
                                         <p className="text-xs text-gray-500 mt-1">{new Date(order.createdAt).toLocaleString()}</p>
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-col md:flex-row gap-2 items-end">
                                         <button
-                                            onClick={() => handleOrderAction(order.id, 'confirm')}
-                                            disabled={order.status !== 'Pending'}
-                                            className="px-3 py-2 bg-green-600 text-white text-xs uppercase tracking-widest hover:bg-green-700 disabled:opacity-50 flex items-center gap-1"
-                                        >
-                                            <Check size={14} /> Confirm
-                                        </button>
-                                        <button
-                                            onClick={() => handleOrderAction(order.id, 'shipping', order.trackingInfo)}
-                                            className="px-3 py-2 bg-blue-600 text-white text-xs uppercase tracking-widest hover:bg-blue-700 flex items-center gap-1"
-                                        >
-                                            <Truck size={14} /> Update Shipping
-                                        </button>
-                                        <button
-                                            onClick={() => handleOrderAction(order.id, 'delete')}
-                                            className="px-3 py-2 bg-red-600 text-white text-xs uppercase tracking-widest hover:bg-red-700 flex items-center gap-1"
+                                            onClick={() => handleDeleteOrder(order.id)}
+                                            className="px-3 py-2 text-red-600 hover:text-red-800 text-xs uppercase tracking-widest flex items-center gap-1"
                                         >
                                             <X size={14} /> Delete
                                         </button>
@@ -628,7 +676,7 @@ const AdminPanel = () => {
                                             <p><span className="font-medium">Phone (WA):</span>
                                               <a
                                                 href={`https://wa.me/${order.customer.phone1.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
-                                                  `Hello ${order.customer.name}, regarding your order #${order.id.slice(-6)} on ZAFIRA.\n\nItems:\n${order.items.map(i => `- ${i.title} (${i.selectedVariant || 'Std'}) x${i.quantity}`).join('\n')}\n\nTotal: Rs. ${parseFloat(order.totalAmount).toFixed(2)}\n\nStatus: ${order.status}`
+                                                  `Hello ${order.customer.name}, regarding your order #${order.id.slice(-6)} on ZAFIRA.`
                                                 )}`}
                                                 target="_blank"
                                                 rel="noreferrer"
@@ -641,24 +689,51 @@ const AdminPanel = () => {
                                             <p><span className="font-medium">Address:</span> {order.customer.address}, {order.customer.city}</p>
                                             <p><span className="font-medium">Payment:</span> {order.paymentMethod.toUpperCase()}</p>
 
-                                            {order.receiptUrl && (
-                                              <div className="mt-2">
-                                                <p className="font-medium">Receipt:</p>
-                                                <a href={order.receiptUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">
-                                                  View Payment Receipt
-                                                </a>
-                                              </div>
+                                            {order.trackingInfo && (
+                                                <div className="mt-2 text-blue-600">
+                                                    <span className="font-medium">Current Tracking:</span> {order.trackingInfo}
+                                                </div>
                                             )}
                                         </div>
-                                        {order.trackingInfo && (
-                                            <div className="mt-4 bg-blue-50 p-3 text-sm text-blue-800 border border-blue-100">
-                                                <span className="font-bold">Tracking Info:</span> {order.trackingInfo}
-                                            </div>
-                                        )}
                                     </div>
 
-                                    {/* Items */}
+                                    {/* Order Management & Items */}
                                     <div>
+                                        <div className="bg-gray-50 p-4 border border-gray-200 mb-4 rounded-sm">
+                                            <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Update Status & Notify</h4>
+
+                                            <div className="grid grid-cols-1 gap-3">
+                                                <div>
+                                                    <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                                                    <select
+                                                        value={updates.status}
+                                                        onChange={(e) => handleUpdateChange(order.id, 'status', e.target.value)}
+                                                        className="w-full text-sm border-gray-300 rounded-sm focus:border-gold-500 focus:ring-1 focus:ring-gold-500 p-2 border"
+                                                    >
+                                                        {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label className="block text-xs font-medium text-gray-600 mb-1">Tracking No.</label>
+                                                    <input
+                                                        type="text"
+                                                        value={updates.tracking}
+                                                        onChange={(e) => handleUpdateChange(order.id, 'tracking', e.target.value)}
+                                                        placeholder="Enter tracking info"
+                                                        className="w-full text-sm border-gray-300 rounded-sm focus:border-gold-500 focus:ring-1 focus:ring-gold-500 p-2 border"
+                                                    />
+                                                </div>
+
+                                                <button
+                                                    onClick={() => handleUpdateOrder(order.id)}
+                                                    className="w-full mt-2 bg-green-600 text-white py-2 px-4 rounded-sm hover:bg-green-700 flex items-center justify-center gap-2 text-sm font-medium transition-colors"
+                                                >
+                                                    <MessageCircle size={16} /> Update & Open WhatsApp
+                                                </button>
+                                            </div>
+                                        </div>
+
                                         <h4 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-2">Items</h4>
                                         <div className="space-y-3">
                                             {order.items && order.items.map((item, idx) => (
@@ -670,25 +745,15 @@ const AdminPanel = () => {
                                                     <p className="font-medium">Rs. {(item.price * item.quantity).toFixed(2)}</p>
                                                 </div>
                                             ))}
-                                            <div className="border-t pt-2 mt-2 space-y-1">
-                                                <div className="flex justify-between text-xs text-gray-500">
-                                                  <span>Subtotal</span>
-                                                  <span>Rs. {(order.subtotal || (order.totalAmount - (order.deliveryCharge || 0))).toFixed(2)}</span>
-                                                </div>
-                                                <div className="flex justify-between text-xs text-gray-500">
-                                                  <span>Delivery</span>
-                                                  <span>Rs. {parseFloat(order.deliveryCharge || 0).toFixed(2)}</span>
-                                                </div>
-                                                <div className="flex justify-between font-bold text-base border-t border-gray-100 pt-1">
-                                                    <span>Total</span>
-                                                    <span>Rs. {parseFloat(order.totalAmount).toFixed(2)}</span>
-                                                </div>
+                                            <div className="border-t pt-2 mt-2 flex justify-between font-bold text-base border-gray-100 pt-1">
+                                                <span>Total</span>
+                                                <span>Rs. {parseFloat(order.totalAmount).toFixed(2)}</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                        )})}
                     </div>
                 )}
             </div>
