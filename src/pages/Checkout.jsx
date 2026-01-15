@@ -23,6 +23,11 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [enteredCoupon, setEnteredCoupon] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState(0);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [isCouponApplied, setIsCouponApplied] = useState(false);
+
   // const [deliveryCharges, setDeliveryCharges] = useState({ cod: 0, bankDeposit: 0 }); // Deprecated in favor of per-product shipping
   const [receiptFile, setReceiptFile] = useState(null);
 
@@ -90,14 +95,16 @@ const Checkout = () => {
           return acc + (cost * item.quantity);
       }, 0);
 
-      const finalTotal = total + deliveryCharge;
+      const finalTotal = total + deliveryCharge - appliedDiscount;
 
       const orderData = {
         customer: formData,
         items: cartItems,
-        totalAmount: finalTotal,
+        totalAmount: finalTotal > 0 ? finalTotal : 0,
         subtotal: total,
         deliveryCharge: deliveryCharge,
+        discount: appliedDiscount,
+        couponCode: isCouponApplied ? enteredCoupon : "",
         paymentMethod: paymentMethod,
         receiptUrl: "", // Receipt upload removed
         status: "Pending",
@@ -119,6 +126,35 @@ const Checkout = () => {
 
   const handleOnlinePayment = (method) => {
     alert(`${method} payment is currently under development. Please select Cash On Delivery.`);
+  };
+
+  const handleApplyCoupon = (e) => {
+      e.preventDefault();
+      setCouponMessage("");
+      setAppliedDiscount(0);
+      setIsCouponApplied(false);
+
+      if (!enteredCoupon.trim()) return;
+
+      const code = enteredCoupon.trim().toUpperCase();
+      let totalDisc = 0;
+      let applied = false;
+
+      cartItems.forEach(item => {
+          if (item.couponCode && item.couponCode.toUpperCase() === code) {
+              const disc = Number(item.couponDiscount) || 0;
+              totalDisc += disc * item.quantity;
+              applied = true;
+          }
+      });
+
+      if (applied) {
+           setAppliedDiscount(totalDisc);
+           setIsCouponApplied(true);
+           setCouponMessage(`Coupon applied! You saved Rs. ${totalDisc}`);
+      } else {
+           setCouponMessage("Invalid coupon code for items in cart.");
+      }
   };
 
   if (cartItems.length === 0) {
@@ -334,6 +370,45 @@ const Checkout = () => {
              </div>
 
              <div className="mt-6 pt-4 border-t border-gray-200 space-y-2">
+                {/* Coupon Input */}
+                <div className="pb-4 border-b border-gray-100">
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={enteredCoupon}
+                            onChange={(e) => setEnteredCoupon(e.target.value)}
+                            placeholder="Coupon Code"
+                            disabled={isCouponApplied}
+                            className="w-full px-3 py-2 border border-gray-300 text-sm focus:border-gold-500 outline-none uppercase"
+                        />
+                        {isCouponApplied ? (
+                            <button
+                                onClick={() => {
+                                    setEnteredCoupon("");
+                                    setAppliedDiscount(0);
+                                    setIsCouponApplied(false);
+                                    setCouponMessage("");
+                                }}
+                                className="bg-red-500 text-white px-4 text-sm font-medium hover:bg-red-600"
+                            >
+                                Remove
+                            </button>
+                        ) : (
+                            <button
+                                onClick={handleApplyCoupon}
+                                className="bg-black text-white px-4 text-sm font-medium hover:bg-gray-800"
+                            >
+                                Apply
+                            </button>
+                        )}
+                    </div>
+                    {couponMessage && (
+                        <p className={`text-xs mt-1 ${isCouponApplied ? 'text-green-600' : 'text-red-500'}`}>
+                            {couponMessage}
+                        </p>
+                    )}
+                </div>
+
                 <div className="flex justify-between text-sm text-gray-600">
                     <span>Subtotal</span>
                     <span>Rs. {total.toFixed(2)}</span>
@@ -345,12 +420,18 @@ const Checkout = () => {
                         return acc + (cost * item.quantity);
                     }, 0).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-base font-bold text-gray-900 pt-2">
+                {isCouponApplied && (
+                    <div className="flex justify-between text-sm text-green-600">
+                        <span>Discount</span>
+                        <span>- Rs. {appliedDiscount.toFixed(2)}</span>
+                    </div>
+                )}
+                <div className="flex justify-between text-base font-bold text-gray-900 pt-2 border-t border-gray-200">
                     <span>Total</span>
-                    <span>Rs. {(total + cartItems.reduce((acc, item) => {
+                    <span>Rs. {Math.max(0, (total + cartItems.reduce((acc, item) => {
                         const cost = paymentMethod === 'cod' ? (Number(item.shippingCostCod) || 0) : (Number(item.shippingCostBank) || 0);
                         return acc + (cost * item.quantity);
-                    }, 0)).toFixed(2)}</span>
+                    }, 0) - appliedDiscount)).toFixed(2)}</span>
                 </div>
              </div>
           </div>
