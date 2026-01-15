@@ -65,6 +65,8 @@ const AdminPanel = () => {
   const [imageUrlInput, setImageUrlInput] = useState("");
   const [variantsInput, setVariantsInput] = useState("");
   const [instructions, setInstructions] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState("");
   const [uploading, setUploading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -178,7 +180,9 @@ const AdminPanel = () => {
         category: finalCategory,
         instructions,
         imageUrl: imageUrl || "",
-        variants: variants
+        variants: variants,
+        couponCode: couponCode || "",
+        couponDiscount: couponDiscount || 0
       };
 
       if (editMode) {
@@ -252,6 +256,8 @@ const AdminPanel = () => {
     setImageUrlInput("");
     setVariantsInput("");
     setInstructions("");
+    setCouponCode("");
+    setCouponDiscount("");
     setEditMode(false);
     setEditingId(null);
   };
@@ -290,6 +296,9 @@ const AdminPanel = () => {
     } else {
         setImageUrlInput(product.imageUrl || "");
     }
+
+    setCouponCode(product.couponCode || "");
+    setCouponDiscount(product.couponDiscount || "");
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -524,6 +533,30 @@ const AdminPanel = () => {
                   className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none text-sm font-mono"
                 />
                 <p className="text-xs text-gray-400 mt-1">Paste direct links to images. Comma separate for slider.</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-100 pt-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Coupon Code (Optional)</label>
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      placeholder="e.g. SAVE10"
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none uppercase"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Discount Amount (Rs.)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={couponDiscount}
+                      onChange={(e) => setCouponDiscount(e.target.value)}
+                      placeholder="e.g. 100"
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                    />
+                  </div>
               </div>
 
               <button
