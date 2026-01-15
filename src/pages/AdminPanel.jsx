@@ -13,6 +13,23 @@ const STATUSES = [
   "Delivered"
 ];
 
+const formatPhoneNumber = (phone) => {
+  // Remove non-numeric characters
+  let cleanPhone = phone.replace(/[^0-9]/g, '');
+
+  // Remove leading 0 if present
+  if (cleanPhone.startsWith('0')) {
+    cleanPhone = cleanPhone.substring(1);
+  }
+
+  // Add 94 prefix if not present (assuming Sri Lankan numbers)
+  if (!cleanPhone.startsWith('94')) {
+    cleanPhone = '94' + cleanPhone;
+  }
+
+  return cleanPhone;
+};
+
 const getWhatsAppMessage = (status, order, tracking) => {
   const name = order.customer.name;
   const id = order.id.slice(-6);
@@ -341,7 +358,7 @@ const AdminPanel = () => {
 
               // Construct WhatsApp Message
               const message = getWhatsAppMessage(updates.status, order, updates.tracking);
-              const phone = order.customer.phone1.replace(/[^0-9]/g, '');
+              const phone = formatPhoneNumber(order.customer.phone1);
               const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
               // Open WhatsApp
@@ -708,7 +725,7 @@ const AdminPanel = () => {
                                             <p><span className="font-medium">Name:</span> {order.customer.name}</p>
                                             <p><span className="font-medium">Phone (WA):</span>
                                               <a
-                                                href={`https://wa.me/${order.customer.phone1.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                                                href={`https://wa.me/${formatPhoneNumber(order.customer.phone1)}?text=${encodeURIComponent(
                                                   `Hello ${order.customer.name}, regarding your order #${order.id.slice(-6)} on ZAFIRA.`
                                                 )}`}
                                                 target="_blank"
