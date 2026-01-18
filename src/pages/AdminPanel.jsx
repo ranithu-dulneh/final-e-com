@@ -37,7 +37,26 @@ const getWhatsAppMessage = (status, order, tracking) => {
 
   switch(status) {
     case "Order confirmed":
-      return `Hello ${name}, your order #${id} has been confirmed! We will dispatch it soon.`;
+      const items = order.items.map(i => i.title).join(', ');
+      const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+      const deliveryMethod = "Courier Service";
+      const paymentMethod = order.paymentMethod === 'cod' ? 'Cash On Delivery' : 'Bank Deposit';
+
+      return `Hi ${name},
+
+Thank you for your order! This message is to confirm that we have received your request for the ${items}.
+Here are your order details:
+
+     ⭕Order Confirmed: ${time}
+     ⭕Total Amount: Rs. ${parseFloat(order.totalAmount).toLocaleString()}
+     ⭕Delivery Fee: ${order.deliveryCharge}
+     ⭕Delivery Method: ${deliveryMethod}
+     ⭕Payment Method: ${paymentMethod}
+     ⭕Tracking No.: ${trackInfo}
+
+Thank you for shopping with us!
+
+zafira.vercel.app`;
     case "Dispatched":
       return `Hello ${name}, your order #${id} has been dispatched. Tracking No: ${trackInfo}. You can track your package.`;
     case "Arrived at the destination":
