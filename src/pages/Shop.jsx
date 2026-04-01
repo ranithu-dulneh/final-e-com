@@ -9,6 +9,8 @@ const Shop = () => {
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [categories, setCategories] = useState(["All"]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,6 +25,10 @@ const Shop = () => {
           }));
           setProducts(productsData);
           setFilteredProducts(productsData);
+
+          // Extract unique categories
+          const uniqueCategories = ["All", ...new Set(productsData.map(p => p.category).filter(Boolean))];
+          setCategories(uniqueCategories);
         } else {
           setProducts([]);
           setFilteredProducts([]);
@@ -38,17 +44,22 @@ const Shop = () => {
   }, []);
 
   useEffect(() => {
-    if (searchQuery.trim() === "") {
-        setFilteredProducts(products);
-    } else {
+    let filtered = products;
+
+    if (selectedCategory !== "All") {
+      filtered = filtered.filter(product => product.category === selectedCategory);
+    }
+
+    if (searchQuery.trim() !== "") {
         const query = searchQuery.toLowerCase();
-        const filtered = products.filter(product =>
+        filtered = filtered.filter(product =>
             product.title.toLowerCase().includes(query) ||
             product.category.toLowerCase().includes(query)
         );
-        setFilteredProducts(filtered);
     }
-  }, [searchQuery, products]);
+
+    setFilteredProducts(filtered);
+  }, [searchQuery, selectedCategory, products]);
 
   return (
     <div className="min-h-screen flex flex-col bg-off-white">
@@ -59,16 +70,37 @@ const Shop = () => {
             <h1 className="text-4xl font-serif text-gray-900 mb-4">The Collection</h1>
             <p className="text-gray-500 max-w-2xl mx-auto font-light">Explore our complete range of exquisite jewelry and gifts.</p>
 
-            {/* Search Bar */}
-            <div className="max-w-md mx-auto mt-8 relative">
-                <input
-                    type="text"
-                    placeholder="Search for jewelry..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-full focus:outline-none focus:border-gold-500 transition-colors text-sm tracking-wide"
-                />
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <div className="max-w-4xl mx-auto mt-8 flex flex-col items-center gap-6">
+                {/* Category Filter */}
+                {categories.length > 1 && (
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {categories.map((category, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedCategory(category)}
+                        className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                          selectedCategory === category
+                            ? "bg-black text-white shadow-md"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}
+                      >
+                        {category}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Search Bar */}
+                <div className="w-full max-w-md relative">
+                    <input
+                        type="text"
+                        placeholder="Search for jewelry..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-full focus:outline-none focus:border-gold-500 transition-colors text-sm tracking-wide shadow-sm"
+                    />
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                </div>
             </div>
          </div>
       </div>

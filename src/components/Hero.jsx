@@ -20,13 +20,13 @@ const Hero = () => {
         <div className="flex justify-center gap-4 animate-fade-in-up animation-delay-400">
           <Link
             to="/shop"
-            className="px-8 py-4 bg-black text-white text-sm uppercase tracking-widest hover:bg-gold-600 transition-colors duration-300"
+            className="px-8 py-4 bg-gold-500 text-white text-sm uppercase tracking-widest font-medium hover:bg-gold-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
           >
             Shop Collection
           </Link>
           <Link
              to="/about"
-             className="px-8 py-4 border border-black text-black text-sm uppercase tracking-widest hover:bg-black hover:text-white transition-colors duration-300"
+             className="px-8 py-4 border border-black text-black text-sm uppercase tracking-widest hover:bg-black hover:text-white transition-all duration-300 font-medium"
           >
              Our Story
           </Link>
