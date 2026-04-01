@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
 import { ref, push, set, get, remove, update } from "firebase/database";
-import { Trash2, Edit2, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle } from "lucide-react";
+import { Trash2, Edit2, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle, UploadCloud } from "lucide-react";
 
 const STATUSES = [
   "Pending",
@@ -104,8 +104,43 @@ const AdminPanel = () => {
   const [couponCode, setCouponCode] = useState("");
   const [couponDiscount, setCouponDiscount] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [fileUploading, setFileUploading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setFileUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("/api/uploadImage", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to upload image");
+      }
+
+      const data = await response.json();
+
+      // Append the new URL to the existing ones
+      setImageUrlInput(prev => prev ? `${prev}, ${data.url}` : data.url);
+      alert("Image uploaded successfully and URL added!");
+    } catch (error) {
+      console.error("Upload error:", error);
+      alert("Error uploading image: " + error.message);
+    } finally {
+      setFileUploading(false);
+      // Clear the file input
+      e.target.value = null;
+    }
+  };
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -560,7 +595,33 @@ const AdminPanel = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Images (URLs)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Images</label>
+
+                {/* File Upload Option */}
+                <div className="mb-3 p-4 border border-dashed border-gray-300 rounded-md bg-gray-50 flex flex-col items-center justify-center">
+                    <UploadCloud className="text-gray-400 mb-2" size={24} />
+                    <label className="cursor-pointer bg-white border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-sm shadow-sm transition-colors mb-2">
+                        {fileUploading ? "Uploading to Cloud..." : "Upload Image to Cloud Storage"}
+                        <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleFileUpload}
+                            disabled={fileUploading}
+                        />
+                    </label>
+                    <p className="text-xs text-gray-500 text-center">
+                        Upload an image directly from your computer.<br/>
+                        The URL will be automatically added below.
+                    </p>
+                </div>
+
+                <div className="flex items-center mb-2">
+                    <div className="flex-grow border-t border-gray-200"></div>
+                    <span className="px-3 text-xs text-gray-400 uppercase tracking-wider font-semibold">OR manually enter URLs</span>
+                    <div className="flex-grow border-t border-gray-200"></div>
+                </div>
+
                 <textarea
                   rows="3"
                   value={imageUrlInput}
@@ -568,7 +629,7 @@ const AdminPanel = () => {
                   placeholder="Enter direct image URLs here, separated by commas for multiple images."
                   className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none text-sm font-mono"
                 />
-                <p className="text-xs text-gray-400 mt-1">Paste direct links to images. Comma separate for slider.</p>
+                <p className="text-xs text-gray-400 mt-1">Direct links will be used to display the image. Comma separate for slider.</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-100 pt-4 mt-4">
