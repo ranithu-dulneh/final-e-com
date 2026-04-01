@@ -9,7 +9,9 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" />;
   }
 
-  if (currentUser.email !== ADMIN_EMAIL) {
+  const ADMIN_UID = "jHolNzdESvNZu2bIO8r06hS21Iu1";
+
+  if (currentUser.email !== ADMIN_EMAIL && currentUser.uid !== ADMIN_UID) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-off-white">
         <div className="text-center p-8">
