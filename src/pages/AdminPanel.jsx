@@ -130,7 +130,7 @@ const AdminPanel = () => {
   const [editingId, setEditingId] = useState(null);
 
   const handleAddVariant = () => {
-    setVariantsList([...variantsList, { name: "", price: "", specifications: "" }]);
+    setVariantsList([...variantsList, { name: "", price: "", specifications: "", imageUrl: "" }]);
   };
 
   const handleVariantChange = (index, field, value) => {
@@ -417,7 +417,7 @@ const AdminPanel = () => {
         setVariantsList(product.variantsList);
     } else if (Array.isArray(product.variants)) {
         // Convert old flat array to object array
-        setVariantsList(product.variants.map(v => ({ name: v, price: product.price, specifications: "" })));
+        setVariantsList(product.variants.map(v => ({ name: v, price: product.price, specifications: "", imageUrl: "" })));
     } else {
         setVariantsList([]);
     }
@@ -689,15 +689,27 @@ const AdminPanel = () => {
                                 />
                             </div>
                         </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Specifications</label>
-                            <input
-                                type="text"
-                                value={variant.specifications}
-                                onChange={(e) => handleVariantChange(index, "specifications", e.target.value)}
-                                placeholder="e.g. 18k Gold Plated, 20g"
-                                className="w-full px-2 py-1 text-sm border border-gray-300 focus:border-gold-500 outline-none"
-                            />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Specifications</label>
+                                <input
+                                    type="text"
+                                    value={variant.specifications}
+                                    onChange={(e) => handleVariantChange(index, "specifications", e.target.value)}
+                                    placeholder="e.g. 18k Gold Plated, 20g"
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 focus:border-gold-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Variant Image URL (Optional)</label>
+                                <input
+                                    type="text"
+                                    value={variant.imageUrl || ""}
+                                    onChange={(e) => handleVariantChange(index, "imageUrl", e.target.value)}
+                                    placeholder="e.g. https://example.com/image.jpg"
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 focus:border-gold-500 outline-none"
+                                />
+                            </div>
                         </div>
                     </div>
                 ))}

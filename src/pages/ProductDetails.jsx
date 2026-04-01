@@ -75,15 +75,35 @@ const ProductDetails = () => {
     fetchProduct();
   }, [id]);
 
+  useEffect(() => {
+    if (selectedVariant && selectedVariant.imageUrl) {
+      const url = selectedVariant.imageUrl;
+      // Check if image is already in the list
+      const index = images.findIndex((img) => img === url);
+
+      if (index !== -1) {
+        setCurrentImageIndex(index);
+      } else {
+        // Add to the front of the list and set as current
+        setImages((prev) => [url, ...prev]);
+        setCurrentImageIndex(0);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedVariant]);
+
   const handleAddToCart = () => {
     if (variants.length > 0 && !selectedVariant) {
       alert("Please select a variant option.");
       return;
     }
-    // Update product price if a variant is selected
+    // Update product price & image if a variant is selected
     const productToAdd = { ...product };
     if (selectedVariant && selectedVariant.price) {
         productToAdd.price = selectedVariant.price;
+    }
+    if (selectedVariant && selectedVariant.imageUrl) {
+        productToAdd.imageUrl = [selectedVariant.imageUrl];
     }
     addToCart(productToAdd, selectedVariant);
     alert("Item added to cart!");
@@ -97,6 +117,9 @@ const ProductDetails = () => {
     const productToAdd = { ...product };
     if (selectedVariant && selectedVariant.price) {
         productToAdd.price = selectedVariant.price;
+    }
+    if (selectedVariant && selectedVariant.imageUrl) {
+        productToAdd.imageUrl = [selectedVariant.imageUrl];
     }
     addToCart(productToAdd, selectedVariant);
     navigate("/checkout");
