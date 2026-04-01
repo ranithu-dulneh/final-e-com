@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
 import { ref, push, set, get, remove, update } from "firebase/database";
-import { Trash2, Edit2, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle, UploadCloud } from "lucide-react";
+import { Trash2, Edit2, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle, UploadCloud, Eye, EyeOff } from "lucide-react";
 
 const STATUSES = [
   "Pending",
@@ -102,6 +102,7 @@ const AdminPanel = () => {
   const [subCategory, setSubCategory] = useState("");
   const [customCategory, setCustomCategory] = useState("");
   const [imageUrlInput, setImageUrlInput] = useState("");
+  const [isVisible, setIsVisible] = useState(true);
 
   // Structured Variants
   const [variantsList, setVariantsList] = useState([]);
@@ -284,25 +285,27 @@ const AdminPanel = () => {
     // Remove empty ones
     const finalVariants = variantsList.filter(v => v.name.trim() !== "");
 
-    const finalCategory = category === "Other" ? customCategory : category;
+    const finalCategory = category === "Other" ? customCategory.trim() : category.trim();
+    const finalSubCategory = subCategory ? subCategory.trim() : "";
 
     try {
       const productData = {
-        title,
+        title: title.trim(),
         price,
         shippingCostCod: shippingCostCod || 0,
         shippingCostBank: shippingCostBank || 0,
-        description,
+        description: description.trim(),
         mainCategory,
         category: finalCategory,
-        subCategory,
-        instructions,
+        subCategory: finalSubCategory,
+        instructions: instructions.trim(),
         imageUrl: imageUrl || "",
         variantsList: finalVariants,
         commitments: commitments,
         allowedPayments: allowedPayments,
         couponCode: couponCode || "",
-        couponDiscount: couponDiscount || 0
+        couponDiscount: couponDiscount || 0,
+        isVisible
       };
 
       if (editMode) {
@@ -376,6 +379,7 @@ const AdminPanel = () => {
     setSubCategory("");
     setCustomCategory("");
     setImageUrlInput("");
+    setIsVisible(true);
     setVariantsList([]);
     setCommitments({
       freeShipping: false,
@@ -408,6 +412,7 @@ const AdminPanel = () => {
 
     setMainCategory(product.mainCategory || "Womens");
     setSubCategory(product.subCategory || "");
+    setIsVisible(product.isVisible !== false);
 
     // Check if category is one of the predefined ones
     const predefinedCategories = ["Necklace", "Bracelets", "Earrings"];
@@ -576,15 +581,30 @@ const AdminPanel = () => {
               )}
             </div>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Title</label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
-                />
+              <div className="flex justify-between items-center gap-4">
+                  <div className="flex-grow">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Product Title</label>
+                    <input
+                      type="text"
+                      required
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 mt-5">
+                      <label htmlFor="isVisibleToggle" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+                          Visible in Shop
+                      </label>
+                      <button
+                          type="button"
+                          id="isVisibleToggle"
+                          onClick={() => setIsVisible(!isVisible)}
+                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${isVisible ? 'bg-gold-600' : 'bg-gray-300'}`}
+                      >
+                          <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${isVisible ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </button>
+                  </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -657,6 +677,7 @@ const AdminPanel = () => {
                           required
                           value={customCategory}
                           onChange={(e) => setCustomCategory(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                           className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                           placeholder="e.g. Watches"
                         />
@@ -668,6 +689,7 @@ const AdminPanel = () => {
                           type="text"
                           value={subCategory}
                           onChange={(e) => setSubCategory(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                           className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                           placeholder="e.g. Shirts"
                         />
@@ -680,6 +702,7 @@ const AdminPanel = () => {
                           type="text"
                           value={subCategory}
                           onChange={(e) => setSubCategory(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') e.preventDefault(); }}
                           className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                           placeholder="e.g. Shirts"
                         />
@@ -976,6 +999,7 @@ const AdminPanel = () => {
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category (Main/Sec/Sub)</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shipping (COD / Bank)</th>
@@ -1000,12 +1024,23 @@ const AdminPanel = () => {
                                                     <img className="h-10 w-10 object-cover" src={previewImage} alt="" />
                                                 </div>
                                                 <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">{product.title}</div>
+                                                    <div className="text-sm font-medium text-gray-900 truncate max-w-[150px]" title={product.title}>{product.title}</div>
                                                 </div>
                                             </div>
                                         </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                                            {product.isVisible !== false ? (
+                                                <span className="inline-flex text-green-600 bg-green-50 p-1 rounded-full" title="Visible to customers">
+                                                    <Eye size={16} />
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex text-gray-400 bg-gray-100 p-1 rounded-full" title="Hidden from customers">
+                                                    <EyeOff size={16} />
+                                                </span>
+                                            )}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 truncate max-w-[200px]" title={`${product.mainCategory || "Womens"} > ${product.category} ${product.subCategory ? `> ${product.subCategory}` : ''}`}>
                                                 {product.mainCategory || "Womens"} &gt; {product.category} {product.subCategory ? `> ${product.subCategory}` : ''}
                                             </span>
                                         </td>

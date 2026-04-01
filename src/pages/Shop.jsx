@@ -26,10 +26,13 @@ const Shop = () => {
         const snapshot = await get(ref(db, 'products'));
         if (snapshot.exists()) {
           const data = snapshot.val();
-          const productsData = Object.keys(data).map(key => ({
-            id: key,
-            ...data[key]
-          }));
+          const productsData = Object.keys(data)
+            .map(key => ({
+              id: key,
+              ...data[key]
+            }))
+            .filter(product => product.isVisible !== false); // Filter out hidden products
+
           setProducts(productsData);
           setFilteredProducts(productsData);
 

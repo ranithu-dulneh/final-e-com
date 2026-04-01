@@ -11,14 +11,19 @@ const Home = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const q = query(ref(db, "products"), limitToFirst(4));
+        // Query more than 4 in case some are hidden, then filter and slice.
+        // limitToFirst(10) is a reasonable buffer. If the store grows, a proper index/query is better.
+        const q = query(ref(db, "products"), limitToFirst(15));
         const snapshot = await get(q);
         if (snapshot.exists()) {
           const data = snapshot.val();
-          const productsData = Object.keys(data).map(key => ({
-            id: key,
-            ...data[key]
-          }));
+          const productsData = Object.keys(data)
+            .map(key => ({
+              id: key,
+              ...data[key]
+            }))
+            .filter(product => product.isVisible !== false)
+            .slice(0, 4);
           setFeaturedProducts(productsData);
         } else {
             setFeaturedProducts([]);
