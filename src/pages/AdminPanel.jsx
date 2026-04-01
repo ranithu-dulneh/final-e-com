@@ -36,7 +36,7 @@ const getWhatsAppMessage = (status, order, tracking) => {
   const trackInfo = tracking || "N/A";
 
   switch(status) {
-    case "Order confirmed":
+    case "Order confirmed": {
       const items = order.items.map(i => i.title).join(', ');
       const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
       const deliveryMethod = "Courier Service";
@@ -57,6 +57,7 @@ Here are your order details:
 Thank you for shopping with us!
 
 zafira.vercel.app`;
+    }
     case "Dispatched":
       return `Hello ${name}, your order #${id} has been dispatched. Tracking No: ${trackInfo}. You can track your package.`;
     case "Arrived at the destination":
@@ -99,7 +100,27 @@ const AdminPanel = () => {
   const [category, setCategory] = useState("");
   const [customCategory, setCustomCategory] = useState("");
   const [imageUrlInput, setImageUrlInput] = useState("");
-  const [variantsInput, setVariantsInput] = useState("");
+
+  // Structured Variants
+  const [variantsList, setVariantsList] = useState([]);
+
+  // Commitments
+  const [commitments, setCommitments] = useState({
+    freeShipping: false,
+    shippingMinDays: 7,
+    shippingMaxDays: 14,
+    freeRefund: false,
+    refundDays: 14,
+    certifiedOriginal: false
+  });
+
+  // Allowed Payments
+  const [allowedPayments, setAllowedPayments] = useState({
+    cod: true,
+    bank: true,
+    online: true
+  });
+
   const [instructions, setInstructions] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [couponDiscount, setCouponDiscount] = useState("");
@@ -107,6 +128,30 @@ const AdminPanel = () => {
   const [fileUploading, setFileUploading] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  const handleAddVariant = () => {
+    setVariantsList([...variantsList, { name: "", price: "", specifications: "" }]);
+  };
+
+  const handleVariantChange = (index, field, value) => {
+    const newVariants = [...variantsList];
+    newVariants[index][field] = value;
+    setVariantsList(newVariants);
+  };
+
+  const handleRemoveVariant = (index) => {
+    const newVariants = [...variantsList];
+    newVariants.splice(index, 1);
+    setVariantsList(newVariants);
+  };
+
+  const handleCommitmentChange = (field, value) => {
+    setCommitments(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePaymentChange = (field, value) => {
+    setAllowedPayments(prev => ({ ...prev, [field]: value }));
+  };
 
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -234,10 +279,8 @@ const AdminPanel = () => {
     }
 
     // Process variants
-    let variants = [];
-    if (variantsInput) {
-        variants = variantsInput.split(',').map(v => v.trim()).filter(v => v.length > 0);
-    }
+    // Remove empty ones
+    const finalVariants = variantsList.filter(v => v.name.trim() !== "");
 
     const finalCategory = category === "Other" ? customCategory : category;
 
@@ -251,7 +294,9 @@ const AdminPanel = () => {
         category: finalCategory,
         instructions,
         imageUrl: imageUrl || "",
-        variants: variants,
+        variantsList: finalVariants,
+        commitments: commitments,
+        allowedPayments: allowedPayments,
         couponCode: couponCode || "",
         couponDiscount: couponDiscount || 0
       };
@@ -325,7 +370,20 @@ const AdminPanel = () => {
     setCategory("");
     setCustomCategory("");
     setImageUrlInput("");
-    setVariantsInput("");
+    setVariantsList([]);
+    setCommitments({
+      freeShipping: false,
+      shippingMinDays: 7,
+      shippingMaxDays: 14,
+      freeRefund: false,
+      refundDays: 14,
+      certifiedOriginal: false
+    });
+    setAllowedPayments({
+      cod: true,
+      bank: true,
+      online: true
+    });
     setInstructions("");
     setCouponCode("");
     setCouponDiscount("");
@@ -354,11 +412,35 @@ const AdminPanel = () => {
 
     setInstructions(product.instructions || "");
 
-    // Handle variants population
-    if (Array.isArray(product.variants)) {
-        setVariantsInput(product.variants.join(', '));
+    // Handle variants population (migrate old format if needed)
+    if (Array.isArray(product.variantsList)) {
+        setVariantsList(product.variantsList);
+    } else if (Array.isArray(product.variants)) {
+        // Convert old flat array to object array
+        setVariantsList(product.variants.map(v => ({ name: v, price: product.price, specifications: "" })));
     } else {
-        setVariantsInput("");
+        setVariantsList([]);
+    }
+
+    // Handle commitments
+    if (product.commitments) {
+        setCommitments(product.commitments);
+    } else {
+        setCommitments({
+          freeShipping: false,
+          shippingMinDays: 7,
+          shippingMaxDays: 14,
+          freeRefund: false,
+          refundDays: 14,
+          certifiedOriginal: false
+        });
+    }
+
+    // Handle payments
+    if (product.allowedPayments) {
+        setAllowedPayments(product.allowedPayments);
+    } else {
+        setAllowedPayments({ cod: true, bank: true, online: true });
     }
 
     // Handle image URL population
@@ -572,15 +654,159 @@ const AdminPanel = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Variants</label>
-                <input
-                  type="text"
-                  value={variantsInput}
-                  onChange={(e) => setVariantsInput(e.target.value)}
-                  placeholder="e.g. Gold, Silver, Rose Gold (Comma separated)"
-                  className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
-                />
-                <p className="text-xs text-gray-400 mt-1">Enter available variants separated by commas.</p>
+                <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-medium text-gray-700">Variants</label>
+                    <button type="button" onClick={handleAddVariant} className="text-xs text-gold-600 hover:text-gold-700 border border-gold-600 px-2 py-1">
+                        + Add Variant
+                    </button>
+                </div>
+
+                {variantsList.map((variant, index) => (
+                    <div key={index} className="mb-4 p-4 border border-gray-200 bg-gray-50 relative">
+                        <button type="button" onClick={() => handleRemoveVariant(index)} className="absolute top-2 right-2 text-gray-400 hover:text-red-500">
+                            <X size={16} />
+                        </button>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-2 pr-6">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                                <input
+                                    type="text"
+                                    value={variant.name}
+                                    onChange={(e) => handleVariantChange(index, "name", e.target.value)}
+                                    placeholder="e.g. Gold"
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 focus:border-gold-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Price (Rs.)</label>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={variant.price}
+                                    onChange={(e) => handleVariantChange(index, "price", e.target.value)}
+                                    placeholder="e.g. 5000"
+                                    className="w-full px-2 py-1 text-sm border border-gray-300 focus:border-gold-500 outline-none"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Specifications</label>
+                            <input
+                                type="text"
+                                value={variant.specifications}
+                                onChange={(e) => handleVariantChange(index, "specifications", e.target.value)}
+                                placeholder="e.g. 18k Gold Plated, 20g"
+                                className="w-full px-2 py-1 text-sm border border-gray-300 focus:border-gold-500 outline-none"
+                            />
+                        </div>
+                    </div>
+                ))}
+                {variantsList.length === 0 && (
+                    <p className="text-xs text-gray-400 mt-1 italic">No variants added. Product will use the base price.</p>
+                )}
+              </div>
+
+              <div className="border-t border-gray-100 pt-4 mt-4">
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Our Commitments</h3>
+
+                  <div className="space-y-3">
+                      <div className="flex items-start">
+                          <input
+                              type="checkbox"
+                              id="freeShipping"
+                              checked={commitments.freeShipping}
+                              onChange={(e) => handleCommitmentChange("freeShipping", e.target.checked)}
+                              className="mt-1"
+                          />
+                          <div className="ml-2">
+                              <label htmlFor="freeShipping" className="text-sm text-gray-800">Free Shipping</label>
+                              {commitments.freeShipping && (
+                                  <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-xs text-gray-500">Est. delivery:</span>
+                                      <input
+                                          type="number"
+                                          value={commitments.shippingMinDays}
+                                          onChange={(e) => handleCommitmentChange("shippingMinDays", parseInt(e.target.value) || 0)}
+                                          className="w-16 px-1 py-1 text-xs border border-gray-300"
+                                      />
+                                      <span className="text-xs text-gray-500">to</span>
+                                      <input
+                                          type="number"
+                                          value={commitments.shippingMaxDays}
+                                          onChange={(e) => handleCommitmentChange("shippingMaxDays", parseInt(e.target.value) || 0)}
+                                          className="w-16 px-1 py-1 text-xs border border-gray-300"
+                                      />
+                                      <span className="text-xs text-gray-500">working days</span>
+                                  </div>
+                              )}
+                          </div>
+                      </div>
+
+                      <div className="flex items-start">
+                          <input
+                              type="checkbox"
+                              id="freeRefund"
+                              checked={commitments.freeRefund}
+                              onChange={(e) => handleCommitmentChange("freeRefund", e.target.checked)}
+                              className="mt-1"
+                          />
+                          <div className="ml-2">
+                              <label htmlFor="freeRefund" className="text-sm text-gray-800">Free Refund Policy</label>
+                              {commitments.freeRefund && (
+                                  <div className="flex items-center gap-2 mt-1">
+                                      <span className="text-xs text-gray-500">Refund if item not delivered in</span>
+                                      <input
+                                          type="number"
+                                          value={commitments.refundDays}
+                                          onChange={(e) => handleCommitmentChange("refundDays", parseInt(e.target.value) || 0)}
+                                          className="w-16 px-1 py-1 text-xs border border-gray-300"
+                                      />
+                                      <span className="text-xs text-gray-500">days</span>
+                                  </div>
+                              )}
+                          </div>
+                      </div>
+
+                      <div className="flex items-center">
+                          <input
+                              type="checkbox"
+                              id="certifiedOriginal"
+                              checked={commitments.certifiedOriginal}
+                              onChange={(e) => handleCommitmentChange("certifiedOriginal", e.target.checked)}
+                          />
+                          <label htmlFor="certifiedOriginal" className="ml-2 text-sm text-gray-800">Certified Original Items</label>
+                      </div>
+                  </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-4 mt-4">
+                  <h3 className="text-sm font-medium text-gray-700 mb-3">Allowed Payment Methods</h3>
+                  <div className="flex flex-wrap gap-4">
+                      <label className="flex items-center">
+                          <input
+                              type="checkbox"
+                              checked={allowedPayments.cod}
+                              onChange={(e) => handlePaymentChange("cod", e.target.checked)}
+                          />
+                          <span className="ml-2 text-sm text-gray-800">Cash on Delivery</span>
+                      </label>
+                      <label className="flex items-center">
+                          <input
+                              type="checkbox"
+                              checked={allowedPayments.bank}
+                              onChange={(e) => handlePaymentChange("bank", e.target.checked)}
+                          />
+                          <span className="ml-2 text-sm text-gray-800">Bank Deposit</span>
+                      </label>
+                      <label className="flex items-center">
+                          <input
+                              type="checkbox"
+                              checked={allowedPayments.online}
+                              onChange={(e) => handlePaymentChange("online", e.target.checked)}
+                          />
+                          <span className="ml-2 text-sm text-gray-800">Online Payments</span>
+                      </label>
+                  </div>
               </div>
 
               <div>

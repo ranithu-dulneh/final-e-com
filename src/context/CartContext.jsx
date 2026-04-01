@@ -27,10 +27,11 @@ export const CartProvider = ({ children }) => {
 
   const addToCart = (product, variant = null, quantity = 1) => {
     setCartItems((prevItems) => {
-      // Create a unique ID for the item based on product ID and variant
-      // If variant is null, it's just the product ID
+      // Create a unique ID for the item based on product ID and variant name
+      const variantName = variant ? (typeof variant === 'object' ? variant.name : variant) : null;
+
       const existingItemIndex = prevItems.findIndex(
-        (item) => item.id === product.id && item.selectedVariant === variant
+        (item) => item.id === product.id && item.selectedVariant === variantName
       );
 
       if (existingItemIndex > -1) {
@@ -44,7 +45,8 @@ export const CartProvider = ({ children }) => {
           ...prevItems,
           {
             ...product,
-            selectedVariant: variant,
+            selectedVariant: variantName,
+            selectedVariantFull: variant, // Store full variant object if needed
             quantity: quantity,
           },
         ];
@@ -53,17 +55,19 @@ export const CartProvider = ({ children }) => {
   };
 
   const removeFromCart = (productId, variant = null) => {
+    const variantName = variant ? (typeof variant === 'object' ? variant.name : variant) : null;
     setCartItems((prevItems) =>
       prevItems.filter(
-        (item) => !(item.id === productId && item.selectedVariant === variant)
+        (item) => !(item.id === productId && item.selectedVariant === variantName)
       )
     );
   };
 
   const updateQuantity = (productId, variant = null, amount) => {
+    const variantName = variant ? (typeof variant === 'object' ? variant.name : variant) : null;
     setCartItems((prevItems) =>
       prevItems.map((item) => {
-        if (item.id === productId && item.selectedVariant === variant) {
+        if (item.id === productId && item.selectedVariant === variantName) {
           const newQuantity = item.quantity + amount;
           return { ...item, quantity: newQuantity > 0 ? newQuantity : 1 };
         }
