@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { db } from "../firebase";
-import { ref, push, set, get } from "firebase/database";
+import { ref, push, set } from "firebase/database";
 import Navbar from "../components/Navbar";
 import { CreditCard, Truck, CheckCircle, AlertCircle, Building, Upload } from "lucide-react";
 
@@ -28,8 +28,33 @@ const Checkout = () => {
   const [couponMessage, setCouponMessage] = useState("");
   const [isCouponApplied, setIsCouponApplied] = useState(false);
 
-  // const [deliveryCharges, setDeliveryCharges] = useState({ cod: 0, bankDeposit: 0 }); // Deprecated in favor of per-product shipping
-  const [receiptFile, setReceiptFile] = useState(null);
+  // Allowed Payment logic
+  const [availableMethods, setAvailableMethods] = useState({ cod: true, bank: true, online: true });
+
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      let codAllowed = true;
+      let bankAllowed = true;
+      let onlineAllowed = true;
+
+      cartItems.forEach(item => {
+        if (item.allowedPayments) {
+          if (!item.allowedPayments.cod) codAllowed = false;
+          if (!item.allowedPayments.bank) bankAllowed = false;
+          if (!item.allowedPayments.online) onlineAllowed = false;
+        }
+      });
+
+      setAvailableMethods({ cod: codAllowed, bank: bankAllowed, online: onlineAllowed });
+
+      // Auto-switch if currently selected is no longer valid
+      if (paymentMethod === 'cod' && !codAllowed) {
+        setPaymentMethod(bankAllowed ? 'bank' : (onlineAllowed ? 'online' : ''));
+      } else if (paymentMethod === 'bank' && !bankAllowed) {
+        setPaymentMethod(codAllowed ? 'cod' : (onlineAllowed ? 'online' : ''));
+      }
+    }
+  }, [cartItems, paymentMethod]);
 
   /* Deprecated: Global delivery charges
   useEffect(() => {
@@ -84,9 +109,6 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      let receiptUrl = "";
-      // Receipt upload removed as requested.
-
       // Calculate per-product shipping based on method
       const deliveryCharge = cartItems.reduce((acc, item) => {
           const cost = paymentMethod === 'cod'
@@ -245,80 +267,95 @@ const Checkout = () => {
               <div className="pt-6">
                 <h2 className="text-xl font-serif text-gray-900 mb-4 border-b pb-2">Payment Method</h2>
 
-                <div className="space-y-3">
-                    <label className={`flex items-center p-4 border cursor-pointer transition-colors ${paymentMethod === 'cod' ? 'border-gold-600 bg-gold-50' : 'border-gray-200'}`}>
-                        <input
-                            type="radio"
-                            name="payment"
-                            value="cod"
-                            checked={paymentMethod === 'cod'}
-                            onChange={() => setPaymentMethod('cod')}
-                            className="text-gold-600 focus:ring-gold-500"
-                        />
-                        <div className="ml-3 w-full">
-                            <span className="font-medium text-gray-900 flex items-center gap-2">
-                                <Truck size={18} /> Cash On Delivery
-                            </span>
-                            {paymentMethod === 'cod' && (
-                                <p className="text-xs text-gray-500 mt-1">Shipping calculated per product (COD rates apply).</p>
-                            )}
-                        </div>
-                    </label>
+                {(!availableMethods.cod || !availableMethods.bank || !availableMethods.online) && (
+                    <div className="mb-4 bg-yellow-50 text-yellow-800 p-3 flex items-start gap-2 text-sm border border-yellow-200 rounded-sm">
+                        <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+                        <p>Some payment methods are unavailable due to restrictions on certain items in your cart.</p>
+                    </div>
+                )}
 
-                    <label className={`flex flex-col p-4 border cursor-pointer transition-colors ${paymentMethod === 'bank' ? 'border-gold-600 bg-gold-50' : 'border-gray-200'}`}>
-                        <div className="flex items-center w-full">
+                <div className="space-y-3">
+                    {availableMethods.cod && (
+                        <label className={`flex items-center p-4 border cursor-pointer transition-colors ${paymentMethod === 'cod' ? 'border-gold-600 bg-gold-50' : 'border-gray-200'}`}>
                             <input
                                 type="radio"
                                 name="payment"
-                                value="bank"
-                                checked={paymentMethod === 'bank'}
-                                onChange={() => setPaymentMethod('bank')}
+                                value="cod"
+                                checked={paymentMethod === 'cod'}
+                                onChange={() => setPaymentMethod('cod')}
                                 className="text-gold-600 focus:ring-gold-500"
                             />
                             <div className="ml-3 w-full">
                                 <span className="font-medium text-gray-900 flex items-center gap-2">
-                                    <Building size={18} /> Bank Deposit
+                                    <Truck size={18} /> Cash On Delivery
                                 </span>
-                                {paymentMethod === 'bank' && (
-                                    <p className="text-xs text-gray-500 mt-1">Shipping calculated per product (Bank rates apply).</p>
+                                {paymentMethod === 'cod' && (
+                                    <p className="text-xs text-gray-500 mt-1">Shipping calculated per product (COD rates apply).</p>
                                 )}
                             </div>
-                        </div>
+                        </label>
+                    )}
 
-                        {paymentMethod === 'bank' && (
-                            <div className="mt-4 ml-7 space-y-3">
-                                <div className="bg-white p-3 border border-gray-200 text-sm text-gray-700 space-y-1">
-                                    <p className="font-bold">Bank Details:</p>
-                                    <p>Account Name: <span className="font-medium">RD Liyanwala</span></p>
-                                    <p>Account No: <span className="font-medium">115020367371</span></p>
-                                    <p>Bank: <span className="font-medium">HNB Bank Colpetty</span></p>
-                                </div>
-                                <div className="bg-blue-50 p-4 border border-blue-100 text-sm text-blue-900">
-                                    <p className="font-bold mb-1">Instructions:</p>
-                                    <p className="mb-2">Please use your <span className="font-bold">Mobile Number</span> as the reference for the transaction.</p>
-                                    <p>For more details contact <span className="font-bold">070 7506269</span> through WhatsApp.</p>
+                    {availableMethods.bank && (
+                        <label className={`flex flex-col p-4 border cursor-pointer transition-colors ${paymentMethod === 'bank' ? 'border-gold-600 bg-gold-50' : 'border-gray-200'}`}>
+                            <div className="flex items-center w-full">
+                                <input
+                                    type="radio"
+                                    name="payment"
+                                    value="bank"
+                                    checked={paymentMethod === 'bank'}
+                                    onChange={() => setPaymentMethod('bank')}
+                                    className="text-gold-600 focus:ring-gold-500"
+                                />
+                                <div className="ml-3 w-full">
+                                    <span className="font-medium text-gray-900 flex items-center gap-2">
+                                        <Building size={18} /> Bank Deposit
+                                    </span>
+                                    {paymentMethod === 'bank' && (
+                                        <p className="text-xs text-gray-500 mt-1">Shipping calculated per product (Bank rates apply).</p>
+                                    )}
                                 </div>
                             </div>
-                        )}
-                    </label>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <button
-                            type="button"
-                            onClick={() => handleOnlinePayment('Visa')}
-                            className="flex items-center justify-center gap-2 p-4 border border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
-                        >
-                            <CreditCard size={18} /> Visa
-                        </button>
-                         <button
-                            type="button"
-                            onClick={() => handleOnlinePayment('Mastercard')}
-                            className="flex items-center justify-center gap-2 p-4 border border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
-                        >
-                            <CreditCard size={18} /> Mastercard
-                        </button>
-                    </div>
-                    <p className="text-xs text-gray-400 text-center">Online payments are currently under development.</p>
+                            {paymentMethod === 'bank' && (
+                                <div className="mt-4 ml-7 space-y-3">
+                                    <div className="bg-white p-3 border border-gray-200 text-sm text-gray-700 space-y-1">
+                                        <p className="font-bold">Bank Details:</p>
+                                        <p>Account Name: <span className="font-medium">RD Liyanwala</span></p>
+                                        <p>Account No: <span className="font-medium">115020367371</span></p>
+                                        <p>Bank: <span className="font-medium">HNB Bank Colpetty</span></p>
+                                    </div>
+                                    <div className="bg-blue-50 p-4 border border-blue-100 text-sm text-blue-900">
+                                        <p className="font-bold mb-1">Instructions:</p>
+                                        <p className="mb-2">Please use your <span className="font-bold">Mobile Number</span> as the reference for the transaction.</p>
+                                        <p>For more details contact <span className="font-bold">070 7506269</span> through WhatsApp.</p>
+                                    </div>
+                                </div>
+                            )}
+                        </label>
+                    )}
+
+                    {availableMethods.online && (
+                        <>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button
+                                    type="button"
+                                    onClick={() => handleOnlinePayment('Visa')}
+                                    className="flex items-center justify-center gap-2 p-4 border border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                                >
+                                    <CreditCard size={18} /> Visa
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleOnlinePayment('Mastercard')}
+                                    className="flex items-center justify-center gap-2 p-4 border border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition-colors"
+                                >
+                                    <CreditCard size={18} /> Mastercard
+                                </button>
+                            </div>
+                            <p className="text-xs text-gray-400 text-center">Online payments are currently under development.</p>
+                        </>
+                    )}
                 </div>
               </div>
 

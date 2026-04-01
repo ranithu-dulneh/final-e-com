@@ -3,8 +3,22 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { ref, get } from "firebase/database";
 import Navbar from "../components/Navbar";
-import { ShoppingBag, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
+import { ShoppingBag, CreditCard, ChevronLeft, ChevronRight, Truck, RefreshCw, ShieldCheck } from "lucide-react";
 import { useCart } from "../context/CartContext";
+
+// Helper function to format dates
+const getEstimatedDeliveryDate = (days) => {
+  const date = new Date();
+  // Add working days (simple approach, skip weekends)
+  let addedDays = 0;
+  while (addedDays < days) {
+    date.setDate(date.getDate() + 1);
+    if (date.getDay() !== 0 && date.getDay() !== 6) {
+      addedDays++;
+    }
+  }
+  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+};
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -41,8 +55,10 @@ const ProductDetails = () => {
           setImages(imgList);
 
           // Handle variants
-          if (Array.isArray(data.variants)) {
-             setVariants(data.variants);
+          if (Array.isArray(data.variantsList)) {
+             setVariants(data.variantsList);
+          } else if (Array.isArray(data.variants)) {
+             setVariants(data.variants.map(v => ({ name: v, price: data.price, specifications: "" })));
           } else {
              setVariants([]);
           }
@@ -64,7 +80,12 @@ const ProductDetails = () => {
       alert("Please select a variant option.");
       return;
     }
-    addToCart(product, selectedVariant);
+    // Update product price if a variant is selected
+    const productToAdd = { ...product };
+    if (selectedVariant && selectedVariant.price) {
+        productToAdd.price = selectedVariant.price;
+    }
+    addToCart(productToAdd, selectedVariant);
     alert("Item added to cart!");
   };
 
@@ -73,7 +94,11 @@ const ProductDetails = () => {
       alert("Please select a variant option.");
       return;
     }
-    addToCart(product, selectedVariant);
+    const productToAdd = { ...product };
+    if (selectedVariant && selectedVariant.price) {
+        productToAdd.price = selectedVariant.price;
+    }
+    addToCart(productToAdd, selectedVariant);
     navigate("/checkout");
   };
 
@@ -159,7 +184,11 @@ const ProductDetails = () => {
             <div>
               <p className="text-sm text-gold-600 uppercase tracking-widest font-medium mb-2">{product.category}</p>
               <h1 className="text-4xl font-serif text-gray-900 mb-2">{product.title}</h1>
-              <p className="text-2xl text-gray-500 font-light">Rs. {parseFloat(product.price).toFixed(2)}</p>
+              <p className="text-2xl text-gray-500 font-light">
+                Rs. {selectedVariant && selectedVariant.price
+                    ? parseFloat(selectedVariant.price).toFixed(2)
+                    : parseFloat(product.price).toFixed(2)}
+              </p>
             </div>
 
             <div className="prose prose-sm text-gray-600">
@@ -171,7 +200,7 @@ const ProductDetails = () => {
             {variants.length > 0 && (
                 <div>
                     <h3 className="text-gray-900 font-serif text-sm mb-3">Select Option</h3>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 mb-2">
                         {variants.map((variant, idx) => (
                             <button
                                 key={idx}
@@ -182,10 +211,56 @@ const ProductDetails = () => {
                                     : "bg-white text-gray-700 border-gray-300 hover:border-black"
                                 }`}
                             >
-                                {variant}
+                                {variant.name}
                             </button>
                         ))}
                     </div>
+                    {selectedVariant && selectedVariant.specifications && (
+                        <p className="text-sm text-gray-500 italic mt-2">
+                            Specifications: {selectedVariant.specifications}
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {/* Our Commitments */}
+            {product.commitments && (
+                <div className="border border-gray-100 rounded-sm bg-gray-50 p-4 space-y-3">
+                    {product.commitments.freeShipping && (
+                        <div className="flex items-start gap-3">
+                            <Truck className="text-gold-600 mt-0.5" size={20} />
+                            <div>
+                                <h4 className="text-sm font-medium text-gray-900">Free Shipping</h4>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Delivery will be done {getEstimatedDeliveryDate(product.commitments.shippingMinDays || 7)} - {getEstimatedDeliveryDate(product.commitments.shippingMaxDays || 14)}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {product.commitments.freeRefund && (
+                        <div className="flex items-start gap-3">
+                            <RefreshCw className="text-gold-600 mt-0.5" size={20} />
+                            <div>
+                                <h4 className="text-sm font-medium text-gray-900">Free Refund Policy</h4>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Refund if item not delivered in {product.commitments.refundDays || 14} days.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {product.commitments.certifiedOriginal && (
+                        <div className="flex items-start gap-3">
+                            <ShieldCheck className="text-gold-600 mt-0.5" size={20} />
+                            <div>
+                                <h4 className="text-sm font-medium text-gray-900">Certified Original Items</h4>
+                                <p className="text-xs text-gray-500 mt-1">
+                                    100% authentic and certified products.
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
