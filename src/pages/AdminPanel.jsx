@@ -97,7 +97,9 @@ const AdminPanel = () => {
   const [shippingCostCod, setShippingCostCod] = useState("");
   const [shippingCostBank, setShippingCostBank] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("");
+  const [mainCategory, setMainCategory] = useState("Womens");
+  const [category, setCategory] = useState(""); // This will be used as Secondary Category
+  const [subCategory, setSubCategory] = useState("");
   const [customCategory, setCustomCategory] = useState("");
   const [imageUrlInput, setImageUrlInput] = useState("");
 
@@ -291,7 +293,9 @@ const AdminPanel = () => {
         shippingCostCod: shippingCostCod || 0,
         shippingCostBank: shippingCostBank || 0,
         description,
+        mainCategory,
         category: finalCategory,
+        subCategory,
         instructions,
         imageUrl: imageUrl || "",
         variantsList: finalVariants,
@@ -367,7 +371,9 @@ const AdminPanel = () => {
     setShippingCostCod("");
     setShippingCostBank("");
     setDescription("");
+    setMainCategory("Womens");
     setCategory("");
+    setSubCategory("");
     setCustomCategory("");
     setImageUrlInput("");
     setVariantsList([]);
@@ -399,6 +405,9 @@ const AdminPanel = () => {
     setShippingCostCod(product.shippingCostCod || "");
     setShippingCostBank(product.shippingCostBank || "");
     setDescription(product.description);
+
+    setMainCategory(product.mainCategory || "Womens");
+    setSubCategory(product.subCategory || "");
 
     // Check if category is one of the predefined ones
     const predefinedCategories = ["Necklace", "Bracelets", "Earrings"];
@@ -612,9 +621,21 @@ const AdminPanel = () => {
                  </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Main Category</label>
+                    <select
+                      required
+                      value={mainCategory}
+                      onChange={(e) => setMainCategory(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none bg-white"
+                    >
+                        <option value="Womens">Womens</option>
+                        <option value="Mens">Mens</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Secondary Category</label>
                     <select
                       required
                       value={category}
@@ -628,16 +649,39 @@ const AdminPanel = () => {
                         <option value="Other">Add New...</option>
                     </select>
                   </div>
-                  {category === "Other" && (
+                  {category === "Other" ? (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">New Category Name</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">New Secondary Category</label>
                         <input
                           type="text"
                           required
                           value={customCategory}
                           onChange={(e) => setCustomCategory(e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
-                          placeholder="e.g. Rings"
+                          placeholder="e.g. Watches"
+                        />
+                      </div>
+                  ) : (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Sub Category (Optional)</label>
+                        <input
+                          type="text"
+                          value={subCategory}
+                          onChange={(e) => setSubCategory(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                          placeholder="e.g. Shirts"
+                        />
+                      </div>
+                  )}
+                  {category === "Other" && (
+                      <div className="sm:col-span-3">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Sub Category (Optional)</label>
+                        <input
+                          type="text"
+                          value={subCategory}
+                          onChange={(e) => setSubCategory(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                          placeholder="e.g. Shirts"
                         />
                       </div>
                   )}
@@ -932,7 +976,7 @@ const AdminPanel = () => {
                             <thead className="bg-gray-50">
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category (Main/Sec/Sub)</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shipping (COD / Bank)</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -962,7 +1006,7 @@ const AdminPanel = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                                {product.category}
+                                                {product.mainCategory || "Womens"} &gt; {product.category} {product.subCategory ? `> ${product.subCategory}` : ''}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
