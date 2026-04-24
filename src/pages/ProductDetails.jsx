@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { ref, get } from "firebase/database";
 import Navbar from "../components/Navbar";
+import ProductCard from "../components/ProductCard";
 import { ShoppingBag, CreditCard, ChevronLeft, ChevronRight, Truck, RefreshCw, ShieldCheck } from "lucide-react";
 import { useCart } from "../context/CartContext";
 
@@ -30,9 +31,10 @@ const ProductDetails = () => {
   const [images, setImages] = useState([]);
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [variants, setVariants] = useState([]);
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
 
   useEffect(() => {
-    const fetchProduct = async () => {
+    const fetchProductData = async () => {
       try {
         const snapshot = await get(ref(db, `products/${id}`));
         if (snapshot.exists()) {
@@ -72,7 +74,28 @@ const ProductDetails = () => {
       }
     };
 
-    fetchProduct();
+    const fetchRecommendedProducts = async () => {
+      try {
+        const recommendedRef = ref(db, 'settings/recommendedProducts');
+        const recommendedSnapshot = await get(recommendedRef);
+        if (recommendedSnapshot.exists()) {
+          const productIds = recommendedSnapshot.val() || [];
+          const productsData = [];
+          for (const prodId of productIds) {
+            const prodSnapshot = await get(ref(db, `products/${prodId}`));
+            if (prodSnapshot.exists() && prodSnapshot.val().isVisible) {
+              productsData.push({ id: prodId, ...prodSnapshot.val() });
+            }
+          }
+          setRecommendedProducts(productsData);
+        }
+      } catch (error) {
+        console.error("Error fetching recommended products:", error);
+      }
+    };
+
+    fetchProductData();
+    fetchRecommendedProducts();
   }, [id]);
 
   useEffect(() => {
@@ -214,6 +237,15 @@ const ProductDetails = () => {
               </p>
             </div>
 
+            <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-100">
+              <button onClick={handleBuyNow} className="flex-1 bg-black text-white py-4 px-6 uppercase tracking-widest hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+                <CreditCard size={18} /> Buy Now
+              </button>
+              <button onClick={handleAddToCart} className="flex-1 border border-black text-black py-4 px-6 uppercase tracking-widest hover:bg-black hover:text-white transition-colors flex items-center justify-center gap-2">
+                <ShoppingBag size={18} /> Add to Cart
+              </button>
+            </div>
+
             <div className="prose prose-sm text-gray-600">
               <h3 className="text-gray-900 font-serif text-lg mb-2">Description</h3>
               <p className="whitespace-pre-line">{product.description}</p>
@@ -294,18 +326,28 @@ const ProductDetails = () => {
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-100">
-              <button onClick={handleBuyNow} className="flex-1 bg-black text-white py-4 px-6 uppercase tracking-widest hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
-                <CreditCard size={18} /> Buy Now
-              </button>
-              <button onClick={handleAddToCart} className="flex-1 border border-black text-black py-4 px-6 uppercase tracking-widest hover:bg-black hover:text-white transition-colors flex items-center justify-center gap-2">
-                <ShoppingBag size={18} /> Add to Cart
-              </button>
-            </div>
+
           </div>
 
         </div>
       </main>
+
+
+      {/* Recommended Products */}
+      {recommendedProducts.length > 0 && (
+        <section className="bg-white py-16 mt-12 border-t border-gray-100">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 className="text-2xl font-serif text-center mb-10">Recommended Products</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                    {recommendedProducts.map(product => (
+                        <div key={product.id} className="w-full">
+                            <ProductCard product={product} />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+      )}
 
       <footer className="bg-black text-white py-12 mt-auto">
         <div className="max-w-7xl mx-auto px-4 text-center">

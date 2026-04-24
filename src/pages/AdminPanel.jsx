@@ -82,6 +82,9 @@ const AdminPanel = () => {
   const [codCharge, setCodCharge] = useState("");
   const [bankCharge, setBankCharge] = useState("");
   const [loadingSettings, setLoadingSettings] = useState(false);
+  const [recommendedProducts, setRecommendedProducts] = useState([]);
+  const [recSearchTerm, setRecSearchTerm] = useState("");
+  const [recSearchResults, setRecSearchResults] = useState([]);
 
   // Products State
   const [products, setProducts] = useState([]);
@@ -299,7 +302,7 @@ const AdminPanel = () => {
         shippingCostBank: shippingCostBank || 0,
         description,
         mainCategory,
-        category: finalCategory,
+        category: finalCategory.trim(),
         subCategory,
         instructions,
         imageUrl: imageUrl || "",
@@ -346,11 +349,53 @@ const AdminPanel = () => {
         setCodCharge(data.cod || "");
         setBankCharge(data.bankDeposit || "");
       }
+
+      const recSnapshot = await get(ref(db, 'settings/recommendedProducts'));
+      if (recSnapshot.exists()) {
+        setRecommendedProducts(recSnapshot.val() || []);
+      }
     } catch (error) {
       console.error("Error fetching settings:", error);
     } finally {
       setLoadingSettings(false);
     }
+  };
+
+  // Search for recommended products
+  useEffect(() => {
+      if (recSearchTerm.trim() === "") {
+          setRecSearchResults([]);
+      } else {
+          const query = recSearchTerm.toLowerCase();
+          const results = products.filter(p =>
+              p.title.toLowerCase().includes(query) &&
+              !recommendedProducts.includes(p.id)
+          ).slice(0, 5); // Limit to 5 results
+          setRecSearchResults(results);
+      }
+  }, [recSearchTerm, products, recommendedProducts]);
+
+  const handleAddRecommended = (product) => {
+      if (recommendedProducts.length >= 6) {
+          alert("Maximum 6 recommended products allowed.");
+          return;
+      }
+      setRecommendedProducts([...recommendedProducts, product.id]);
+      setRecSearchTerm("");
+  };
+
+  const handleRemoveRecommended = (idToRemove) => {
+      setRecommendedProducts(recommendedProducts.filter(id => id !== idToRemove));
+  };
+
+  const handleSaveRecommended = async () => {
+      try {
+          await set(ref(db, 'settings/recommendedProducts'), recommendedProducts);
+          alert("Recommended products saved!");
+      } catch (err) {
+          console.error(err);
+          alert("Failed to save recommended products.");
+      }
   };
 
   const handleSaveSettings = async (e) => {
@@ -1219,6 +1264,7 @@ const AdminPanel = () => {
             </div>
       ) : activeTab === 'settings' ? (
         // Settings View
+        <>
         <div className="bg-white p-6 shadow-sm border border-gray-100 max-w-2xl mx-auto">
             <h2 className="text-xl font-serif mb-6 border-b pb-2">Delivery Charges</h2>
             <form onSubmit={handleSaveSettings} className="space-y-6">
@@ -1253,6 +1299,83 @@ const AdminPanel = () => {
                 </button>
             </form>
         </div>
+
+        <div className="bg-white p-6 shadow-sm border border-gray-100 max-w-2xl mx-auto mt-8">
+            <h2 className="text-xl font-serif mb-6 border-b pb-2">Recommended Products (Max 6)</h2>
+
+            <div className="mb-6 relative">
+                <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                        type="text"
+                        placeholder="Search products to add..."
+                        value={recSearchTerm}
+                        onChange={(e) => setRecSearchTerm(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-sm focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none text-sm"
+                    />
+                </div>
+                {recSearchResults.length > 0 && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 shadow-lg rounded-sm max-h-60 overflow-y-auto">
+                        {recSearchResults.map(prod => (
+                            <div
+                                key={prod.id}
+                                onClick={() => handleAddRecommended(prod)}
+                                className="flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0"
+                            >
+                                {prod.imageUrl && prod.imageUrl[0] ? (
+                                    <img src={prod.imageUrl[0]} alt="" className="w-10 h-10 object-cover rounded-sm" />
+                                ) : (
+                                    <div className="w-10 h-10 bg-gray-200 rounded-sm"></div>
+                                )}
+                                <div>
+                                    <p className="text-sm font-medium">{prod.title}</p>
+                                    <p className="text-xs text-gray-500">Rs. {prod.price}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            <div className="space-y-3 mb-6">
+                {recommendedProducts.map(recId => {
+                    const prod = products.find(p => p.id === recId);
+                    if (!prod) return null;
+                    return (
+                        <div key={recId} className="flex items-center justify-between p-3 border border-gray-200 rounded-sm">
+                            <div className="flex items-center gap-3">
+                                {prod.imageUrl && prod.imageUrl[0] ? (
+                                    <img src={prod.imageUrl[0]} alt="" className="w-12 h-12 object-cover rounded-sm" />
+                                ) : (
+                                    <div className="w-12 h-12 bg-gray-200 rounded-sm"></div>
+                                )}
+                                <div>
+                                    <p className="text-sm font-medium">{prod.title}</p>
+                                    <p className="text-xs text-gray-500">{prod.category || 'No Category'}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => handleRemoveRecommended(recId)}
+                                className="text-red-500 hover:text-red-700 p-2"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+                    );
+                })}
+                {recommendedProducts.length === 0 && (
+                    <p className="text-center text-gray-500 text-sm py-4">No recommended products added yet.</p>
+                )}
+            </div>
+
+            <button
+                onClick={handleSaveRecommended}
+                className="w-full bg-black text-white py-3 uppercase tracking-widest hover:bg-gold-600 transition-colors"
+            >
+                Save Recommendations
+            </button>
+        </div>
+        </>
       ) : null}
     </div>
     </div>
