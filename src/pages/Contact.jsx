@@ -1,12 +1,18 @@
 import Navbar from "../components/Navbar";
 import { Facebook, Instagram, Mail, Phone } from "lucide-react";
+import { motion } from "framer-motion";
 
 const Contact = () => {
   return (
     <div className="min-h-screen bg-off-white">
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="max-w-4xl mx-auto animate-fade-in-up">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="max-w-4xl mx-auto"
+        >
           <div className="text-center mb-16">
             <h1 className="text-4xl md:text-5xl font-serif text-gray-900 mb-6">
               Contact Us
@@ -95,7 +101,7 @@ const Contact = () => {
                </form>
             </div>
           </div>
-        </div>
+        </motion.div>
       </main>
     </div>
   );

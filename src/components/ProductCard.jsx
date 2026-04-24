@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 const ProductCard = ({ product }) => {
   const { id, title, price, imageUrl, category } = product;
@@ -18,12 +19,18 @@ const ProductCard = ({ product }) => {
   }
 
   return (
-    <Link to={`/product/${id}`} className="block">
-        <div
-        className="group relative flex flex-col items-center bg-white p-4 rounded-lg transition-all duration-300 hover:shadow-xl"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        >
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
+      <Link to={`/product/${id}`} className="block">
+          <div
+          className="group relative flex flex-col items-center bg-white p-4 rounded-lg transition-all duration-300 hover:shadow-xl"
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          >
         <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden mb-4 rounded-md">
             <img
             src={displayImage}
@@ -39,13 +46,14 @@ const ProductCard = ({ product }) => {
             </button>
         </div>
 
-        <div className="text-center space-y-1.5 w-full">
-            <p className="text-xs text-gray-500 uppercase tracking-widest">{category}</p>
-            <h3 className="text-lg font-serif text-gray-900 line-clamp-1">{title}</h3>
-            <p className="text-gold-600 font-medium">Rs. {parseFloat(price).toFixed(2)}</p>
-        </div>
-        </div>
-    </Link>
+          <div className="text-center space-y-1.5 w-full">
+              <p className="text-xs text-gray-500 uppercase tracking-widest">{category}</p>
+              <h3 className="text-lg font-serif text-gray-900 line-clamp-1">{title}</h3>
+              <p className="text-gold-600 font-medium">Rs. {parseFloat(price).toFixed(2)}</p>
+          </div>
+          </div>
+      </Link>
+    </motion.div>
   );
 };
 
