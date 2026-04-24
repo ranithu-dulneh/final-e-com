@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { CheckCircle, ShoppingBag } from "lucide-react";
+import { motion } from "framer-motion";
 
 const OrderConfirmation = () => {
   const location = useLocation();
@@ -24,7 +25,12 @@ const OrderConfirmation = () => {
     <div className="min-h-screen bg-off-white">
       <Navbar />
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="bg-white p-8 md:p-12 shadow-lg border border-gray-100 animate-fade-in-up text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="bg-white p-8 md:p-12 shadow-lg border border-gray-100 text-center"
+        >
 
             <div className="flex justify-center mb-6">
               <div className="rounded-full bg-green-100 p-4">
@@ -105,7 +111,7 @@ const OrderConfirmation = () => {
               <ShoppingBag size={20} />
               Continue Shopping
             </button>
-        </div>
+        </motion.div>
       </main>
     </div>
   );

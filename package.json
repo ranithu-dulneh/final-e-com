@@ -12,6 +12,7 @@
   "dependencies": {
     "busboy": "^1.6.0",
     "firebase": "^12.12.1",
+    "framer-motion": "^12.38.0",
     "lucide-react": "^0.562.0",
     "oci-common": "^2.127.0",
     "oci-objectstorage": "^2.127.0",

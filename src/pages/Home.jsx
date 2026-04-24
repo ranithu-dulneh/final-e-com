@@ -4,6 +4,7 @@ import ProductGallery from "../components/ProductGallery";
 import Navbar from "../components/Navbar";
 import { db } from "../firebase";
 import { ref, query, limitToFirst, get } from "firebase/database";
+import { motion } from "framer-motion";
 
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -37,11 +38,17 @@ const Home = () => {
       <Hero />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full">
-        <div className="text-center mb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-50px" }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="text-center mb-16"
+        >
           <span className="text-gold-600 uppercase tracking-widest text-sm font-medium">Curated Selection</span>
           <h2 className="text-3xl md:text-4xl font-serif mt-2 mb-4 text-gray-900">Featured Collections</h2>
           <div className="w-24 h-1 bg-gold-400 mx-auto" />
-        </div>
+        </motion.div>
 
         <ProductGallery products={featuredProducts} />
       </main>
