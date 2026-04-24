@@ -12,7 +12,8 @@ const STATUSES = [
   "Dispatched",
   "Arrived at the destination",
   "Out for delivery",
-  "Delivered"
+  "Delivered",
+  "Returned"
 ];
 
 const formatPhoneNumber = (phone) => {
@@ -92,6 +93,8 @@ const AdminPanel = () => {
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [orderUpdates, setOrderUpdates] = useState({}); // Stores local edits for orders { id: { status, tracking } }
+  const [orderSearchTerm, setOrderSearchTerm] = useState("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("All");
 
   // Form State
   const [title, setTitle] = useState("");
@@ -1056,14 +1059,44 @@ const AdminPanel = () => {
       ) : activeTab === 'orders' ? (
             // Orders View
             <div className="bg-white p-6 shadow-sm border border-gray-100">
-                <h2 className="text-xl font-serif mb-6 border-b pb-2">Orders ({orders.length})</h2>
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4 gap-4">
+                    <h2 className="text-xl font-serif">Orders ({orders.length})</h2>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                            <input
+                                type="text"
+                                placeholder="Search orders..."
+                                value={orderSearchTerm}
+                                onChange={(e) => setOrderSearchTerm(e.target.value)}
+                                className="pl-9 pr-4 py-2 border border-gray-300 rounded-sm focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none text-sm w-full"
+                            />
+                        </div>
+                        <select
+                            value={orderStatusFilter}
+                            onChange={(e) => setOrderStatusFilter(e.target.value)}
+                            className="px-4 py-2 border border-gray-300 rounded-sm focus:border-gold-500 focus:ring-1 focus:ring-gold-500 outline-none text-sm bg-white"
+                        >
+                            <option value="All">All Statuses</option>
+                            {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                    </div>
+                </div>
                 {loadingOrders ? (
                     <p className="text-center text-gray-500">Loading orders...</p>
                 ) : orders.length === 0 ? (
                     <p className="text-center text-gray-500 py-8">No orders found.</p>
                 ) : (
                     <div className="space-y-6">
-                        {orders.map((order) => {
+                        {orders.filter(order => {
+                            const matchesSearch = orderSearchTerm === "" ||
+                                order.id.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
+                                order.customer.phone1.includes(orderSearchTerm) ||
+                                order.customer.name.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
+                                (order.trackingInfo && order.trackingInfo.toLowerCase().includes(orderSearchTerm.toLowerCase()));
+                            const matchesStatus = orderStatusFilter === "All" || order.status === orderStatusFilter;
+                            return matchesSearch && matchesStatus;
+                        }).map((order) => {
                             const updates = orderUpdates[order.id] || { status: order.status, tracking: order.trackingInfo || "" };
 
                             return (
@@ -1099,6 +1132,7 @@ const AdminPanel = () => {
                                         <h4 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-2">Customer Details</h4>
                                         <div className="text-sm text-gray-800 space-y-1">
                                             <p><span className="font-medium">Name:</span> {order.customer.name}</p>
+                                            <p><span className="font-medium">Email:</span> {order.customer.email || 'N/A'}</p>
                                             <p><span className="font-medium">Phone (WA):</span>
                                               <a
                                                 href={`https://wa.me/${formatPhoneNumber(order.customer.phone1)}?text=${encodeURIComponent(

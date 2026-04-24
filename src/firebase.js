@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
+import { getAnalytics } from "firebase/analytics";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -10,11 +11,13 @@ const firebaseConfig = {
   projectId: "luxe-2a0f1",
   storageBucket: "luxe-2a0f1.firebasestorage.app",
   messagingSenderId: "871576437088",
-  appId: "1:871576437088:web:9a2f732f0f28df39241e05"
+  appId: "1:871576437088:web:9a2f732f0f28df39241e05",
+  measurementId: "G-ZPH7116G6C"
 };
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getDatabase(app);
+export const analytics = getAnalytics(app);
 
 export default app;

@@ -1,70 +1,106 @@
 import { useState, useEffect } from "react";
 import { db } from "../../firebase";
 import { ref, get } from "firebase/database";
-import { TrendingUp, Users, ShoppingBag, DollarSign } from "lucide-react";
+import { TrendingUp, Users, ShoppingBag, DollarSign, Package, Truck, CheckCircle, RotateCcw } from "lucide-react";
 
 const DashboardMetrics = () => {
+  const [timeFilter, setTimeFilter] = useState("Today"); // 'Today', 'This Month', 'This Year', 'Custom'
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
+
   const [metrics, setMetrics] = useState({
-    totalVisits: 0,
-    todayVisits: 0,
-    totalSalesAmount: 0,
-    totalOrders: 0,
-    todaySalesAmount: 0,
-    monthlySalesAmount: 0,
+    visits: 0,
+    salesAmount: 0,
+    ordersCount: 0,
+
+    // Categorization
+    pending: 0,
+    dispatched: 0,
+    delivered: 0,
+    returned: 0
   });
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchAnalytics = async () => {
+      setLoading(true);
       try {
-        const today = new Date().toISOString().split('T')[0];
-        const currentMonth = today.substring(0, 7);
+        const todayStr = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+        const startOfYear = new Date(now.getFullYear(), 0, 1).getTime();
 
-        const snapshot = await get(ref(db, 'analytics'));
+        let customStartTime = 0;
+        let customEndTime = Infinity;
+        if (timeFilter === 'Custom' && customStart && customEnd) {
+            customStartTime = new Date(customStart).getTime();
+            customEndTime = new Date(customEnd).getTime() + 86399999; // end of day
+        }
 
-        let fetchedMetrics = {
-          totalVisits: 0,
-          todayVisits: 0,
-          totalSalesAmount: 0,
-          totalOrders: 0,
-          todaySalesAmount: 0,
-          monthlySalesAmount: 0,
+        const isWithinFilter = (timestamp) => {
+            if (timeFilter === 'Today') return timestamp >= startOfDay;
+            if (timeFilter === 'This Month') return timestamp >= startOfMonth;
+            if (timeFilter === 'This Year') return timestamp >= startOfYear;
+            if (timeFilter === 'Custom') return timestamp >= customStartTime && timestamp <= customEndTime;
+            return true;
         };
 
-        if (snapshot.exists()) {
-          const data = snapshot.val();
+        // Fetch Orders
+        const ordersSnap = await get(ref(db, 'orders'));
+        let salesAmount = 0;
+        let ordersCount = 0;
+        let pending = 0;
+        let dispatched = 0;
+        let delivered = 0;
+        let returned = 0;
 
-          if (data.visits) {
-            fetchedMetrics.totalVisits = data.visits.total || 0;
-            if (data.visits.daily && data.visits.daily[today]) {
-              fetchedMetrics.todayVisits = data.visits.daily[today];
-            }
-          }
+        if (ordersSnap.exists()) {
+            const ordersData = ordersSnap.val();
+            Object.values(ordersData).forEach(order => {
+                const orderTime = new Date(order.createdAt).getTime();
+                if (isWithinFilter(orderTime)) {
+                    salesAmount += parseFloat(order.totalAmount || 0);
+                    ordersCount++;
 
-          if (data.sales) {
-            if (data.sales.total) {
-              fetchedMetrics.totalSalesAmount = data.sales.total.amount || 0;
-              fetchedMetrics.totalOrders = data.sales.total.count || 0;
-            }
-            if (data.sales.daily && data.sales.daily[today]) {
-              fetchedMetrics.todaySalesAmount = data.sales.daily[today].amount || 0;
-            }
-            if (data.sales.monthly && data.sales.monthly[currentMonth]) {
-              fetchedMetrics.monthlySalesAmount = data.sales.monthly[currentMonth].amount || 0;
-            }
-          }
+                    // Count statuses
+                    const status = order.status || '';
+                    if (status.toLowerCase().includes('pending')) pending++;
+                    else if (status.toLowerCase().includes('dispatched')) dispatched++;
+                    else if (status.toLowerCase().includes('delivered')) delivered++;
+                    else if (status.toLowerCase().includes('returned')) returned++;
+                }
+            });
         }
 
-        // As a fallback/initialisation, let's also fetch orders directly to get total orders count
-        // if sales tracking was just implemented
-        if (fetchedMetrics.totalOrders === 0) {
-            const ordersSnap = await get(ref(db, 'orders'));
-            if (ordersSnap.exists()) {
-                fetchedMetrics.totalOrders = Object.keys(ordersSnap.val()).length;
+        // Fetch Analytics for Visits
+        const analyticsSnap = await get(ref(db, 'analytics'));
+        let visits = 0;
+        if (analyticsSnap.exists()) {
+            const data = analyticsSnap.val();
+            if (data.visits && data.visits.daily) {
+                Object.entries(data.visits.daily).forEach(([dateStr, count]) => {
+                    const dateObj = new Date(dateStr);
+                    // Add timezone offset so it matches local dates
+                    const visitTime = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate()).getTime();
+                    if (isWithinFilter(visitTime)) {
+                        visits += count;
+                    }
+                });
             }
         }
 
-        setMetrics(fetchedMetrics);
+        setMetrics({
+            visits,
+            salesAmount,
+            ordersCount,
+            pending,
+            dispatched,
+            delivered,
+            returned
+        });
+
       } catch (error) {
         console.error("Error fetching analytics:", error);
       } finally {
@@ -73,11 +109,7 @@ const DashboardMetrics = () => {
     };
 
     fetchAnalytics();
-  }, []);
-
-  if (loading) {
-    return <div className="p-4 text-center">Loading dashboard metrics...</div>;
-  }
+  }, [timeFilter, customStart, customEnd]);
 
   const MetricCard = ({ title, value, icon: Icon, subtitle }) => (
     <div className="bg-white p-6 shadow-sm border border-gray-100 rounded-sm">
@@ -93,29 +125,75 @@ const DashboardMetrics = () => {
   );
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <MetricCard
-        title="Total Sales"
-        value={`Rs. ${metrics.totalSalesAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-        icon={DollarSign}
-        subtitle={`Rs. ${metrics.monthlySalesAmount.toLocaleString()} this month`}
-      />
-      <MetricCard
-        title="Today's Sales"
-        value={`Rs. ${metrics.todaySalesAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-        icon={TrendingUp}
-      />
-      <MetricCard
-        title="Total Orders"
-        value={metrics.totalOrders}
-        icon={ShoppingBag}
-      />
-      <MetricCard
-        title="Site Visits"
-        value={metrics.totalVisits}
-        icon={Users}
-        subtitle={`${metrics.todayVisits} visits today`}
-      />
+    <div className="mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 border-b border-gray-100 pb-4">
+        <h2 className="text-xl font-serif">Dashboard</h2>
+        <div className="flex flex-wrap items-center gap-4">
+          <select
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(e.target.value)}
+            className="border-gray-300 rounded-sm focus:border-gold-500 focus:ring-1 focus:ring-gold-500 p-2 border text-sm"
+          >
+            <option value="Today">Today</option>
+            <option value="This Month">This Month</option>
+            <option value="This Year">This Year</option>
+            <option value="Custom">Custom</option>
+          </select>
+
+          {timeFilter === 'Custom' && (
+            <div className="flex items-center gap-2">
+                <input
+                    type="date"
+                    value={customStart}
+                    onChange={(e) => setCustomStart(e.target.value)}
+                    className="border-gray-300 rounded-sm p-2 border text-sm"
+                />
+                <span className="text-gray-500">-</span>
+                <input
+                    type="date"
+                    value={customEnd}
+                    onChange={(e) => setCustomEnd(e.target.value)}
+                    className="border-gray-300 rounded-sm p-2 border text-sm"
+                />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="p-4 text-center text-gray-500">Loading dashboard metrics...</div>
+      ) : (
+        <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <MetricCard
+                title="Sales"
+                value={`Rs. ${metrics.salesAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                icon={DollarSign}
+                subtitle={`${timeFilter} filter applied`}
+            />
+            <MetricCard
+                title="Orders"
+                value={metrics.ordersCount}
+                icon={ShoppingBag}
+                subtitle={`${timeFilter} filter applied`}
+            />
+            <MetricCard
+                title="Site Visits"
+                value={metrics.visits}
+                icon={Users}
+                subtitle={`${timeFilter} filter applied`}
+            />
+            </div>
+
+            <h3 className="text-lg font-serif mb-4 mt-8">Order Categorization ({timeFilter})</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <MetricCard title="Pending" value={metrics.pending} icon={Package} />
+                <MetricCard title="Dispatched" value={metrics.dispatched} icon={Truck} />
+                <MetricCard title="Delivered" value={metrics.delivered} icon={CheckCircle} />
+                <MetricCard title="Returned" value={metrics.returned} icon={RotateCcw} />
+            </div>
+        </>
+      )}
     </div>
   );
 };
