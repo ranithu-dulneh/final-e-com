@@ -1,3 +1,5 @@
+import DashboardMetrics from "../components/admin/DashboardMetrics";
+import { BarChart2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
@@ -73,7 +75,7 @@ zafira.vercel.app`;
 
 const AdminPanel = () => {
   const { logout } = useAuth();
-  const [activeTab, setActiveTab] = useState("inventory"); // 'inventory', 'orders', 'settings'
+  const [activeTab, setActiveTab] = useState("dashboard"); // 'inventory', 'orders', 'settings'
 
   // Settings State
   const [codCharge, setCodCharge] = useState("");
@@ -535,6 +537,13 @@ const AdminPanel = () => {
             <h1 className="text-xl font-serif">ZAFIRA Admin</h1>
             <nav className="flex gap-4">
                 <button
+                    onClick={() => setActiveTab('dashboard')}
+                    className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'dashboard' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <BarChart2 size={16} /> Dashboard
+                </button>
+
+                <button
                     onClick={() => setActiveTab('inventory')}
                     className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'inventory' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
                 >
@@ -561,7 +570,12 @@ const AdminPanel = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
 
-        {activeTab === 'inventory' ? (
+        {activeTab === 'dashboard' ? (
+          <div>
+            <h2 className="text-2xl font-serif mb-6 text-gray-900">Analytics Dashboard</h2>
+            <DashboardMetrics />
+          </div>
+        ) : activeTab === 'inventory' ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
         {/* Add/Edit Product Form */}

@@ -1,3 +1,4 @@
+import { trackSale } from "../utils/trackSales";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
@@ -135,6 +136,7 @@ const Checkout = () => {
 
       const newOrderRef = push(ref(db, 'orders'));
       await set(newOrderRef, orderData);
+      await trackSale(orderData.totalAmount);
 
       clearCart();
       navigate('/order-confirmation', { state: { orderId: newOrderRef.key, orderData } });

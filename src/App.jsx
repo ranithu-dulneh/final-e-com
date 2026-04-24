@@ -1,3 +1,4 @@
+import { useTrackVisit } from "./hooks/useTrackVisit";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
@@ -14,6 +15,7 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
+  useTrackVisit();
   return (
     <Router>
       <AuthProvider>
