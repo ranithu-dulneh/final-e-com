@@ -58,7 +58,7 @@ const Shop = () => {
       setSelectedSecondaryCategory("All");
     } else {
       const filteredForMain = products.filter(p => p.mainCategory === selectedMainCategory);
-      const uniqueSec = ["All", ...new Set(filteredForMain.map(p => p.category).filter(Boolean))];
+      const uniqueSec = ["All", ...new Set(filteredForMain.map(p => p.category?.trim()).filter(Boolean))];
       setSecondaryCategories(uniqueSec);
       setSelectedSecondaryCategory("All");
     }
@@ -71,7 +71,7 @@ const Shop = () => {
       setSelectedSubCategory("All");
     } else {
       const filteredForSec = products.filter(p => p.mainCategory === selectedMainCategory && p.category === selectedSecondaryCategory);
-      const uniqueSub = ["All", ...new Set(filteredForSec.map(p => p.subCategory).filter(Boolean))];
+      const uniqueSub = ["All", ...new Set(filteredForSec.map(p => p.subCategory?.trim()).filter(Boolean))];
       setSubCategories(uniqueSub);
       setSelectedSubCategory("All");
     }
@@ -86,11 +86,11 @@ const Shop = () => {
     }
 
     if (selectedSecondaryCategory !== "All") {
-      filtered = filtered.filter(product => product.category === selectedSecondaryCategory);
+      filtered = filtered.filter(product => product.category?.trim() === selectedSecondaryCategory);
     }
 
     if (selectedSubCategory !== "All") {
-      filtered = filtered.filter(product => product.subCategory === selectedSubCategory);
+      filtered = filtered.filter(product => product.subCategory?.trim() === selectedSubCategory);
     }
 
     if (searchQuery.trim() !== "") {
