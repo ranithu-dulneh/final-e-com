@@ -14,6 +14,7 @@ const Checkout = () => {
 
   const [formData, setFormData] = useState({
     name: "",
+    email: "",
     address: "",
     phone1: "",
     phone2: "",
@@ -212,6 +213,18 @@ const Checkout = () => {
                   name="name"
                   required
                   value={formData.name}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  value={formData.email}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                 />
