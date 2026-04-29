@@ -2,8 +2,9 @@ import DashboardMetrics from "../components/admin/DashboardMetrics";
 import { BarChart2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { db } from "../firebase";
+import { db, storage } from "../firebase";
 import { ref, push, set, get, remove, update } from "firebase/database";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Trash2, Edit2, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle, UploadCloud } from "lucide-react";
 
 const STATUSES = [
@@ -168,24 +169,17 @@ const AdminPanel = () => {
     if (!file) return;
 
     setFileUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
 
     try {
-      const response = await fetch("/api/uploadImage", {
-        method: "POST",
-        body: formData,
-      });
+      const extension = file.name.split('.').pop() || 'png';
+      const fileName = `products/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${extension}`;
+      const fileRef = storageRef(storage, fileName);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to upload image");
-      }
-
-      const data = await response.json();
+      await uploadBytes(fileRef, file);
+      const url = await getDownloadURL(fileRef);
 
       // Append the new URL to the existing ones
-      setImageUrlInput(prev => prev ? `${prev}, ${data.url}` : data.url);
+      setImageUrlInput(prev => prev ? `${prev}, ${url}` : url);
       alert("Image uploaded successfully and URL added!");
     } catch (error) {
       console.error("Upload error:", error);
