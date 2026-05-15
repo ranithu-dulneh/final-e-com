@@ -29,6 +29,7 @@ const Checkout = () => {
   const [appliedDiscount, setAppliedDiscount] = useState(0);
   const [couponMessage, setCouponMessage] = useState("");
   const [isCouponApplied, setIsCouponApplied] = useState(false);
+  const [agreeToTerms, setAgreeToTerms] = useState(false);
 
   // Allowed Payment logic
   const [availableMethods, setAvailableMethods] = useState({ cod: true, bank: true, online: true });
@@ -105,6 +106,11 @@ const Checkout = () => {
 
     if (cartItems.length === 0) {
       setError("Your cart is empty.");
+      return;
+    }
+
+    if (!agreeToTerms) {
+      setError("You must agree to the terms and conditions, privacy policy, and refund policy to place an order.");
       return;
     }
 
@@ -374,8 +380,26 @@ const Checkout = () => {
                 </div>
               </div>
 
+              <div className="mt-6 border-t border-gray-200 pt-6">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    required
+                    checked={agreeToTerms}
+                    onChange={(e) => setAgreeToTerms(e.target.checked)}
+                    className="mt-1 w-4 h-4 text-gold-600 border-gray-300 rounded focus:ring-gold-500"
+                  />
+                  <span className="text-sm text-gray-600">
+                    I have read and agree to the website{" "}
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-gold-600 hover:text-gold-700 underline">
+                      Terms and Conditions, Privacy Policy, and Refund Policy
+                    </a>.
+                  </span>
+                </label>
+              </div>
+
               {error && (
-                <div className="bg-red-50 text-red-600 p-3 flex items-center gap-2 text-sm">
+                <div className="bg-red-50 text-red-600 p-3 flex items-center gap-2 text-sm mt-4">
                     <AlertCircle size={16} /> {error}
                 </div>
               )}

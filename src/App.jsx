@@ -14,6 +14,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Terms from "./pages/Terms";
 
 function App() {
   useTrackVisit();
@@ -30,6 +31,7 @@ function App() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="/order-confirmation" element={<OrderConfirmation />} />
           <Route path="/login" element={<Login />} />
             <Route
