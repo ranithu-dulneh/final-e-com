@@ -21,6 +21,7 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
+      <PopupAd />
       <AuthProvider>
         <CartProvider>
           <Routes>
