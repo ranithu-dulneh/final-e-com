@@ -93,6 +93,13 @@ const AdminPanel = () => {
   const [seasonalOfferDescription, setSeasonalOfferDescription] = useState("");
   const [loadingOffers, setLoadingOffers] = useState(false);
 
+  const [popupActive, setPopupActive] = useState(false);
+  const [popupHeading, setPopupHeading] = useState("");
+  const [popupDescription, setPopupDescription] = useState("");
+  const [popupImageUrl, setPopupImageUrl] = useState("");
+  const [popupTargetUrl, setPopupTargetUrl] = useState("");
+  const [popupTargetPage, setPopupTargetPage] = useState("All");
+
   // Categories State
   const [categoriesList, setCategoriesList] = useState([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
@@ -462,6 +469,13 @@ const AdminPanel = () => {
         setSeasonalOfferActive(data.seasonalOfferActive || false);
         setSeasonalOfferTitle(data.seasonalOfferTitle || "");
         setSeasonalOfferDescription(data.seasonalOfferDescription || "");
+
+        setPopupActive(data.popupActive || false);
+        setPopupHeading(data.popupHeading || "");
+        setPopupDescription(data.popupDescription || "");
+        setPopupImageUrl(data.popupImageUrl || "");
+        setPopupTargetUrl(data.popupTargetUrl || "");
+        setPopupTargetPage(data.popupTargetPage || "All");
       }
     } catch (error) {
       console.error("Error fetching offers:", error);
@@ -478,9 +492,15 @@ const AdminPanel = () => {
         freeShippingThreshold: Number(freeShippingThreshold) || 0,
         seasonalOfferActive,
         seasonalOfferTitle,
-        seasonalOfferDescription
+        seasonalOfferDescription,
+        popupActive,
+        popupHeading,
+        popupDescription,
+        popupImageUrl,
+        popupTargetUrl,
+        popupTargetPage
       });
-      alert("Offers updated successfully!");
+      alert("Offers & Popup updated successfully!");
     } catch (error) {
       console.error("Error saving offers:", error);
       alert("Failed to save offers.");
@@ -1510,12 +1530,87 @@ const AdminPanel = () => {
                     </div>
                 </div>
 
+                <div className="border-t border-gray-100 pt-6 mt-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-medium text-gray-800">Promotional Popup Ad</h3>
+                        <label className="flex items-center cursor-pointer">
+                            <div className="relative">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only"
+                                    checked={popupActive}
+                                    onChange={(e) => setPopupActive(e.target.checked)}
+                                />
+                                <div className={`block w-10 h-6 rounded-full transition-colors ${popupActive ? 'bg-gold-500' : 'bg-gray-300'}`}></div>
+                                <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${popupActive ? 'transform translate-x-4' : ''}`}></div>
+                            </div>
+                            <span className="ml-3 text-sm text-gray-700 font-medium">Active</span>
+                        </label>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Heading</label>
+                            <input
+                              type="text"
+                              value={popupHeading}
+                              onChange={(e) => setPopupHeading(e.target.value)}
+                              placeholder="e.g. New Collection Arrived"
+                              className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                            <input
+                              type="text"
+                              value={popupImageUrl}
+                              onChange={(e) => setPopupImageUrl(e.target.value)}
+                              placeholder="e.g. https://example.com/image.jpg"
+                              className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                            />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                            <textarea
+                              rows="2"
+                              value={popupDescription}
+                              onChange={(e) => setPopupDescription(e.target.value)}
+                              placeholder="e.g. Get early access to our limited collection."
+                              className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Target URL (On Click)</label>
+                            <input
+                              type="text"
+                              value={popupTargetUrl}
+                              onChange={(e) => setPopupTargetUrl(e.target.value)}
+                              placeholder="e.g. /shop, /product/123"
+                              className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Show on Page</label>
+                            <select
+                                value={popupTargetPage}
+                                onChange={(e) => setPopupTargetPage(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none bg-white"
+                            >
+                                <option value="All">All Pages</option>
+                                <option value="/">Home Page (/)</option>
+                                <option value="/shop">Shop Page (/shop)</option>
+                                <option value="/about">About Page (/about)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
                 <button
                     type="submit"
                     disabled={loadingOffers}
                     className="w-full bg-black text-white py-3 uppercase tracking-widest hover:bg-gold-600 transition-colors disabled:opacity-50"
                 >
-                    {loadingOffers ? 'Saving...' : 'Save Offers'}
+                    {loadingOffers ? 'Saving...' : 'Save Offers & Popup'}
                 </button>
             </form>
         </div>

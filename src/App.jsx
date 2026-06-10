@@ -15,12 +15,14 @@ import Contact from "./pages/Contact";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Terms from "./pages/Terms";
+import PopupAd from "./components/PopupAd";
 
 function App() {
   useTrackVisit();
   return (
     <Router>
       <ScrollToTop />
+      <PopupAd />
       <AuthProvider>
         <CartProvider>
           <Routes>
