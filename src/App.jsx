@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import ScrollToTop from "./components/ScrollToTop";
-import PopupAd from "./components/PopupAd";
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 import Login from "./pages/Login";
