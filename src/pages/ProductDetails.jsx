@@ -230,11 +230,24 @@ const ProductDetails = () => {
             <div>
               <p className="text-sm text-gold-600 uppercase tracking-widest font-medium mb-2">{product.category}</p>
               <h1 className="text-4xl font-serif text-gray-900 mb-2">{product.title}</h1>
-              <p className="text-2xl text-gray-500 font-light">
-                Rs. {selectedVariant && selectedVariant.price
-                    ? parseFloat(selectedVariant.price).toFixed(2)
-                    : parseFloat(product.price).toFixed(2)}
-              </p>
+              <div className="flex items-center gap-3">
+                  {product.originalPrice && (!selectedVariant || !selectedVariant.price) && (
+                      <span className="text-xl text-gray-400 line-through font-light">
+                          Rs. {parseFloat(product.originalPrice).toFixed(2)}
+                      </span>
+                  )}
+                  <p className="text-2xl text-gray-900 font-medium">
+                    Rs. {selectedVariant && selectedVariant.price
+                        ? parseFloat(selectedVariant.price).toFixed(2)
+                        : parseFloat(product.price).toFixed(2)}
+                  </p>
+              </div>
+              {product.estimatedShippingDate && (
+                  <div className="flex items-center gap-2 mt-3 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-sm border border-gray-100 inline-flex">
+                      <Truck size={16} className="text-gold-600" />
+                      <span>Estimated Shipping: <span className="font-medium text-gray-900">{product.estimatedShippingDate}</span></span>
+                  </div>
+              )}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-100">

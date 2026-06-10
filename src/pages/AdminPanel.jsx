@@ -76,7 +76,7 @@ zafira.vercel.app`;
 
 const AdminPanel = () => {
   const { logout } = useAuth();
-  const [activeTab, setActiveTab] = useState("dashboard"); // 'inventory', 'orders', 'settings'
+  const [activeTab, setActiveTab] = useState("dashboard"); // 'inventory', 'add-product', 'orders', 'settings', 'offers', 'categories'
 
   // Settings State
   const [codCharge, setCodCharge] = useState("");
@@ -85,6 +85,20 @@ const AdminPanel = () => {
   const [recommendedProducts, setRecommendedProducts] = useState([]);
   const [recSearchTerm, setRecSearchTerm] = useState("");
   const [recSearchResults, setRecSearchResults] = useState([]);
+
+  // Offers State
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState("");
+  const [seasonalOfferActive, setSeasonalOfferActive] = useState(false);
+  const [seasonalOfferTitle, setSeasonalOfferTitle] = useState("");
+  const [seasonalOfferDescription, setSeasonalOfferDescription] = useState("");
+  const [loadingOffers, setLoadingOffers] = useState(false);
+
+  // Categories State
+  const [categoriesList, setCategoriesList] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [newCatImage, setNewCatImage] = useState("");
+  const [editingCatId, setEditingCatId] = useState(null);
 
   // Products State
   const [products, setProducts] = useState([]);
@@ -98,17 +112,19 @@ const AdminPanel = () => {
   const [orderUpdates, setOrderUpdates] = useState({}); // Stores local edits for orders { id: { status, tracking } }
   const [orderSearchTerm, setOrderSearchTerm] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("All");
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   // Form State
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
+  const [originalPrice, setOriginalPrice] = useState("");
   const [shippingCostCod, setShippingCostCod] = useState("");
   const [shippingCostBank, setShippingCostBank] = useState("");
+  const [estimatedShippingDate, setEstimatedShippingDate] = useState("");
   const [description, setDescription] = useState("");
   const [mainCategory, setMainCategory] = useState("Womens");
   const [category, setCategory] = useState(""); // This will be used as Secondary Category
   const [subCategory, setSubCategory] = useState("");
-  const [customCategory, setCustomCategory] = useState("");
   const [imageUrlInput, setImageUrlInput] = useState("");
 
   // Structured Variants
@@ -259,6 +275,12 @@ const AdminPanel = () => {
       fetchOrders();
     } else if (activeTab === 'settings') {
       fetchSettings();
+    } else if (activeTab === 'offers') {
+      fetchOffers();
+    } else if (activeTab === 'categories') {
+      fetchCategories();
+    } else if (activeTab === 'add-product') {
+      fetchCategories();
     }
   }, [activeTab]);
 
@@ -277,7 +299,10 @@ const AdminPanel = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title || !price || !category) return;
+    if (!title || !price || !category || !estimatedShippingDate) {
+        alert("Please fill all mandatory fields including Estimated Shipping Date.");
+        return;
+    }
 
     setUploading(true);
 
@@ -292,14 +317,16 @@ const AdminPanel = () => {
     // Remove empty ones
     const finalVariants = variantsList.filter(v => v.name.trim() !== "");
 
-    const finalCategory = category === "Other" ? customCategory : category;
+    const finalCategory = category;
 
     try {
       const productData = {
         title,
         price,
+        originalPrice: originalPrice || "",
         shippingCostCod: shippingCostCod || 0,
         shippingCostBank: shippingCostBank || 0,
+        estimatedShippingDate,
         description,
         mainCategory,
         category: finalCategory.trim(),
@@ -361,6 +388,107 @@ const AdminPanel = () => {
     }
   };
 
+  const fetchCategories = async () => {
+    setLoadingCategories(true);
+    try {
+      const snapshot = await get(ref(db, 'settings/categories'));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const cats = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+        setCategoriesList(cats);
+      } else {
+        setCategoriesList([]);
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const handleSaveCategory = async (e) => {
+    e.preventDefault();
+    if (!newCatName) return;
+
+    setLoadingCategories(true);
+    try {
+      if (editingCatId) {
+        await update(ref(db, `settings/categories/${editingCatId}`), {
+          name: newCatName,
+          imageUrl: newCatImage
+        });
+      } else {
+        const newRef = push(ref(db, 'settings/categories'));
+        await set(newRef, {
+          name: newCatName,
+          imageUrl: newCatImage
+        });
+      }
+      setNewCatName("");
+      setNewCatImage("");
+      setEditingCatId(null);
+      fetchCategories();
+    } catch (error) {
+      console.error("Error saving category:", error);
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    if (window.confirm("Are you sure you want to delete this category?")) {
+      try {
+        await remove(ref(db, `settings/categories/${id}`));
+        fetchCategories();
+      } catch (error) {
+        console.error("Error deleting category:", error);
+      }
+    }
+  };
+
+  const handleEditCategory = (cat) => {
+    setEditingCatId(cat.id);
+    setNewCatName(cat.name);
+    setNewCatImage(cat.imageUrl || "");
+  };
+
+  const fetchOffers = async () => {
+    setLoadingOffers(true);
+    try {
+      const snapshot = await get(ref(db, 'settings/offers'));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        setFreeShippingThreshold(data.freeShippingThreshold || "");
+        setSeasonalOfferActive(data.seasonalOfferActive || false);
+        setSeasonalOfferTitle(data.seasonalOfferTitle || "");
+        setSeasonalOfferDescription(data.seasonalOfferDescription || "");
+      }
+    } catch (error) {
+      console.error("Error fetching offers:", error);
+    } finally {
+      setLoadingOffers(false);
+    }
+  };
+
+  const handleSaveOffers = async (e) => {
+    e.preventDefault();
+    setLoadingOffers(true);
+    try {
+      await update(ref(db, 'settings/offers'), {
+        freeShippingThreshold: Number(freeShippingThreshold) || 0,
+        seasonalOfferActive,
+        seasonalOfferTitle,
+        seasonalOfferDescription
+      });
+      alert("Offers updated successfully!");
+    } catch (error) {
+      console.error("Error saving offers:", error);
+      alert("Failed to save offers.");
+    } finally {
+      setLoadingOffers(false);
+    }
+  };
+
   // Search for recommended products
   useEffect(() => {
       if (recSearchTerm.trim() === "") {
@@ -418,13 +546,14 @@ const AdminPanel = () => {
   const resetForm = () => {
     setTitle("");
     setPrice("");
+    setOriginalPrice("");
     setShippingCostCod("");
     setShippingCostBank("");
+    setEstimatedShippingDate("");
     setDescription("");
     setMainCategory("Womens");
     setCategory("");
     setSubCategory("");
-    setCustomCategory("");
     setImageUrlInput("");
     setVariantsList([]);
     setCommitments({
@@ -448,26 +577,20 @@ const AdminPanel = () => {
   };
 
   const handleEdit = (product) => {
+    setActiveTab('add-product');
     setEditMode(true);
     setEditingId(product.id);
     setTitle(product.title);
     setPrice(product.price);
+    setOriginalPrice(product.originalPrice || "");
     setShippingCostCod(product.shippingCostCod || "");
     setShippingCostBank(product.shippingCostBank || "");
+    setEstimatedShippingDate(product.estimatedShippingDate || "");
     setDescription(product.description);
 
     setMainCategory(product.mainCategory || "Womens");
     setSubCategory(product.subCategory || "");
-
-    // Check if category is one of the predefined ones
-    const predefinedCategories = ["Necklace", "Bracelets", "Earrings"];
-    if (predefinedCategories.includes(product.category)) {
-        setCategory(product.category);
-        setCustomCategory("");
-    } else {
-        setCategory("Other");
-        setCustomCategory(product.category);
-    }
+    setCategory(product.category || "");
 
     setInstructions(product.instructions || "");
 
@@ -598,6 +721,12 @@ const AdminPanel = () => {
                     <Package size={16} /> Inventory
                 </button>
                 <button
+                    onClick={() => { setActiveTab('add-product'); resetForm(); }}
+                    className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'add-product' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <Package size={16} /> Add Product
+                </button>
+                <button
                     onClick={() => setActiveTab('orders')}
                     className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'orders' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
                 >
@@ -608,6 +737,18 @@ const AdminPanel = () => {
                     className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'settings' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
                 >
                     <Settings size={16} /> Settings
+                </button>
+                <button
+                    onClick={() => setActiveTab('offers')}
+                    className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'offers' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <Check size={16} /> Offers
+                </button>
+                <button
+                    onClick={() => setActiveTab('categories')}
+                    className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'categories' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <Package size={16} /> Categories
                 </button>
             </nav>
         </div>
@@ -623,12 +764,9 @@ const AdminPanel = () => {
             <h2 className="text-2xl font-serif mb-6 text-gray-900">Analytics Dashboard</h2>
             <DashboardMetrics />
           </div>
-        ) : activeTab === 'inventory' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
-        {/* Add/Edit Product Form */}
-        <div className="lg:col-span-1">
-          <div className="bg-white p-6 shadow-sm border border-gray-100 sticky top-8">
+        ) : activeTab === 'add-product' ? (
+          <div className="max-w-3xl mx-auto">
+          <div className="bg-white p-6 shadow-sm border border-gray-100">
             <div className="flex justify-between items-center mb-6 border-b pb-2">
               <h2 className="text-xl font-serif">{editMode ? 'Edit Product' : 'Add New Product'}</h2>
               {editMode && (
@@ -649,7 +787,7 @@ const AdminPanel = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.)</label>
                     <input
@@ -661,6 +799,20 @@ const AdminPanel = () => {
                       className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                     />
                  </div>
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Original Price / Striked Amount (Rs.)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={originalPrice}
+                      onChange={(e) => setOriginalPrice(e.target.value)}
+                      placeholder="Optional"
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                    />
+                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">COD Shipping (Rs.)</label>
                     <input
@@ -678,6 +830,17 @@ const AdminPanel = () => {
                       step="0.01"
                       value={shippingCostBank}
                       onChange={(e) => setShippingCostBank(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                    />
+                 </div>
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Shipping Date</label>
+                    <input
+                      type="text"
+                      required
+                      value={estimatedShippingDate}
+                      onChange={(e) => setEstimatedShippingDate(e.target.value)}
+                      placeholder="e.g. 7-14 Days"
                       className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                     />
                  </div>
@@ -705,48 +868,21 @@ const AdminPanel = () => {
                       className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none bg-white"
                     >
                         <option value="">Select Category</option>
-                        <option value="Necklace">Necklace</option>
-                        <option value="Bracelets">Bracelets</option>
-                        <option value="Earrings">Earrings</option>
-                        <option value="Other">Add New...</option>
+                        {categoriesList.map(cat => (
+                            <option key={cat.id} value={cat.name}>{cat.name}</option>
+                        ))}
                     </select>
                   </div>
-                  {category === "Other" ? (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">New Secondary Category</label>
-                        <input
-                          type="text"
-                          required
-                          value={customCategory}
-                          onChange={(e) => setCustomCategory(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
-                          placeholder="e.g. Watches"
-                        />
-                      </div>
-                  ) : (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Sub Category (Optional)</label>
-                        <input
-                          type="text"
-                          value={subCategory}
-                          onChange={(e) => setSubCategory(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
-                          placeholder="e.g. Shirts"
-                        />
-                      </div>
-                  )}
-                  {category === "Other" && (
-                      <div className="sm:col-span-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Sub Category (Optional)</label>
-                        <input
-                          type="text"
-                          value={subCategory}
-                          onChange={(e) => setSubCategory(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
-                          placeholder="e.g. Shirts"
-                        />
-                      </div>
-                  )}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Sub Category (Optional)</label>
+                    <input
+                      type="text"
+                      value={subCategory}
+                      onChange={(e) => setSubCategory(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                      placeholder="e.g. Shirts"
+                    />
+                  </div>
               </div>
 
               <div>
@@ -1009,10 +1145,9 @@ const AdminPanel = () => {
               </button>
             </form>
           </div>
-        </div>
-
-        {/* Product List */}
-        <div className="lg:col-span-2">
+          </div>
+        ) : activeTab === 'inventory' ? (
+          <div>
             <div className="bg-white p-6 shadow-sm border border-gray-100">
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 border-b pb-4 gap-4">
                     <h2 className="text-xl font-serif">Inventory ({products.length})</h2>
@@ -1099,8 +1234,7 @@ const AdminPanel = () => {
                     </div>
                 )}
             </div>
-        </div>
-      </div>
+          </div>
       ) : activeTab === 'orders' ? (
             // Orders View
             <div className="bg-white p-6 shadow-sm border border-gray-100">
@@ -1132,136 +1266,342 @@ const AdminPanel = () => {
                 ) : orders.length === 0 ? (
                     <p className="text-center text-gray-500 py-8">No orders found.</p>
                 ) : (
-                    <div className="space-y-6">
-                        {orders.filter(order => {
-                            const matchesSearch = orderSearchTerm === "" ||
-                                order.id.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
-                                order.customer.phone1.includes(orderSearchTerm) ||
-                                order.customer.name.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
-                                (order.trackingInfo && order.trackingInfo.toLowerCase().includes(orderSearchTerm.toLowerCase()));
-                            const matchesStatus = orderStatusFilter === "All" || order.status === orderStatusFilter;
-                            return matchesSearch && matchesStatus;
-                        }).map((order) => {
-                            const updates = orderUpdates[order.id] || { status: order.status, tracking: order.trackingInfo || "" };
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {orders.filter(order => {
+                                    const matchesSearch = orderSearchTerm === "" ||
+                                        order.id.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
+                                        order.customer.phone1.includes(orderSearchTerm) ||
+                                        order.customer.name.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
+                                        (order.trackingInfo && order.trackingInfo.toLowerCase().includes(orderSearchTerm.toLowerCase()));
+                                    const matchesStatus = orderStatusFilter === "All" || order.status === orderStatusFilter;
+                                    return matchesSearch && matchesStatus;
+                                }).map((order) => {
+                                    return (
+                                        <tr key={order.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedOrder(order)}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                #{order.id.slice(-6)}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {new Date(order.createdAt).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {order.customer.name}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {order.customer.city}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {order.customer.phone1}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`px-2 py-1 text-xs font-bold rounded-full uppercase tracking-wider ${
+                                                    order.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
+                                                    order.status === 'Shipped' || order.status === 'Dispatched' ? 'bg-blue-100 text-blue-800' :
+                                                    order.status === 'Delivered' ? 'bg-gray-800 text-white' :
+                                                    'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                    {order.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }}
+                                                    className="text-indigo-600 hover:text-indigo-900 ml-4"
+                                                >
+                                                    View Details
+                                                </button>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteOrder(order.id); }}
+                                                    className="text-red-600 hover:text-red-900 ml-4"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
 
-                            return (
-                            <div key={order.id} className="border border-gray-200 p-6 rounded-sm">
-                                <div className="flex flex-col md:flex-row justify-between md:items-start gap-4 mb-4 pb-4 border-b border-gray-100">
-                                    <div>
-                                        <div className="flex items-center gap-3">
-                                            <h3 className="font-serif text-lg font-bold">Order #{order.id.slice(-6)}</h3>
-                                            <span className={`px-2 py-1 text-xs font-bold rounded-full uppercase tracking-wider ${
-                                                order.status === 'Confirmed' ? 'bg-green-100 text-green-800' :
-                                                order.status === 'Shipped' || order.status === 'Dispatched' ? 'bg-blue-100 text-blue-800' :
-                                                order.status === 'Delivered' ? 'bg-gray-800 text-white' :
-                                                'bg-yellow-100 text-yellow-800'
-                                            }`}>
-                                                {order.status}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs text-gray-500 mt-1">{new Date(order.createdAt).toLocaleString()}</p>
-                                    </div>
-                                    <div className="flex flex-col md:flex-row gap-2 items-end">
-                                        <button
-                                            onClick={() => handleDeleteOrder(order.id)}
-                                            className="px-3 py-2 text-red-600 hover:text-red-800 text-xs uppercase tracking-widest flex items-center gap-1"
-                                        >
-                                            <X size={14} /> Delete
-                                        </button>
+            {/* Order Details Modal */}
+            {selectedOrder && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+                    <div className="bg-white rounded-md shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center z-10">
+                            <h3 className="font-serif text-xl font-bold">Order #{selectedOrder.id.slice(-6)} Details</h3>
+                            <button onClick={() => setSelectedOrder(null)} className="text-gray-400 hover:text-gray-600">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                {/* Customer Info */}
+                                <div>
+                                    <h4 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-3 border-b pb-2">Customer Details</h4>
+                                    <div className="text-sm text-gray-800 space-y-2">
+                                        <p><span className="font-medium">Name:</span> {selectedOrder.customer.name}</p>
+                                        <p><span className="font-medium">Email:</span> {selectedOrder.customer.email || 'N/A'}</p>
+                                        <p><span className="font-medium">Phone (WA):</span>
+                                            <a
+                                            href={`https://wa.me/${formatPhoneNumber(selectedOrder.customer.phone1)}?text=${encodeURIComponent(
+                                                `Hello ${selectedOrder.customer.name}, regarding your order #${selectedOrder.id.slice(-6)} on ZAFIRA.`
+                                            )}`}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-green-600 hover:underline ml-1"
+                                            >
+                                            {selectedOrder.customer.phone1} (Chat)
+                                            </a>
+                                        </p>
+                                        {selectedOrder.customer.phone2 && <p><span className="font-medium">Phone 2:</span> {selectedOrder.customer.phone2}</p>}
+                                        <p><span className="font-medium">Address:</span> {selectedOrder.customer.address}, {selectedOrder.customer.city}</p>
+                                        <p><span className="font-medium">Payment:</span> {selectedOrder.paymentMethod.toUpperCase()}</p>
+                                        <p><span className="font-medium">Date:</span> {new Date(selectedOrder.createdAt).toLocaleString()}</p>
+
+                                        {selectedOrder.trackingInfo && (
+                                            <div className="mt-2 text-blue-600 bg-blue-50 p-2 rounded-sm border border-blue-100">
+                                                <span className="font-medium">Current Tracking:</span> {selectedOrder.trackingInfo}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    {/* Customer Info */}
-                                    <div>
-                                        <h4 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-2">Customer Details</h4>
-                                        <div className="text-sm text-gray-800 space-y-1">
-                                            <p><span className="font-medium">Name:</span> {order.customer.name}</p>
-                                            <p><span className="font-medium">Email:</span> {order.customer.email || 'N/A'}</p>
-                                            <p><span className="font-medium">Phone (WA):</span>
-                                              <a
-                                                href={`https://wa.me/${formatPhoneNumber(order.customer.phone1)}?text=${encodeURIComponent(
-                                                  `Hello ${order.customer.name}, regarding your order #${order.id.slice(-6)} on ZAFIRA.`
-                                                )}`}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="text-green-600 hover:underline ml-1"
-                                              >
-                                                {order.customer.phone1} (Chat)
-                                              </a>
-                                            </p>
-                                            {order.customer.phone2 && <p><span className="font-medium">Phone 2:</span> {order.customer.phone2}</p>}
-                                            <p><span className="font-medium">Address:</span> {order.customer.address}, {order.customer.city}</p>
-                                            <p><span className="font-medium">Payment:</span> {order.paymentMethod.toUpperCase()}</p>
+                                {/* Order Management & Items */}
+                                <div>
+                                    <div className="bg-gray-50 p-4 border border-gray-200 mb-6 rounded-sm">
+                                        <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Update Status & Notify</h4>
 
-                                            {order.trackingInfo && (
-                                                <div className="mt-2 text-blue-600">
-                                                    <span className="font-medium">Current Tracking:</span> {order.trackingInfo}
-                                                </div>
-                                            )}
+                                        <div className="grid grid-cols-1 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                                                <select
+                                                    value={orderUpdates[selectedOrder.id]?.status || selectedOrder.status}
+                                                    onChange={(e) => handleUpdateChange(selectedOrder.id, 'status', e.target.value)}
+                                                    className="w-full text-sm border-gray-300 rounded-sm focus:border-gold-500 focus:ring-1 focus:ring-gold-500 p-2 border bg-white"
+                                                >
+                                                    {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-600 mb-1">Tracking No.</label>
+                                                <input
+                                                    type="text"
+                                                    value={orderUpdates[selectedOrder.id]?.tracking !== undefined ? orderUpdates[selectedOrder.id].tracking : (selectedOrder.trackingInfo || "")}
+                                                    onChange={(e) => handleUpdateChange(selectedOrder.id, 'tracking', e.target.value)}
+                                                    placeholder="Enter tracking info"
+                                                    className="w-full text-sm border-gray-300 rounded-sm focus:border-gold-500 focus:ring-1 focus:ring-gold-500 p-2 border"
+                                                />
+                                            </div>
+
+                                            <button
+                                                onClick={() => {
+                                                    handleUpdateOrder(selectedOrder.id);
+                                                    // optionally update local selectedOrder state to reflect change
+                                                    setSelectedOrder({
+                                                        ...selectedOrder,
+                                                        status: orderUpdates[selectedOrder.id]?.status || selectedOrder.status,
+                                                        trackingInfo: orderUpdates[selectedOrder.id]?.tracking !== undefined ? orderUpdates[selectedOrder.id].tracking : selectedOrder.trackingInfo
+                                                    });
+                                                }}
+                                                className="w-full mt-2 bg-green-600 text-white py-2 px-4 rounded-sm hover:bg-green-700 flex items-center justify-center gap-2 text-sm font-medium transition-colors"
+                                            >
+                                                <MessageCircle size={16} /> Update & Open WhatsApp
+                                            </button>
                                         </div>
                                     </div>
 
-                                    {/* Order Management & Items */}
-                                    <div>
-                                        <div className="bg-gray-50 p-4 border border-gray-200 mb-4 rounded-sm">
-                                            <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Update Status & Notify</h4>
-
-                                            <div className="grid grid-cols-1 gap-3">
+                                    <h4 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-3 border-b pb-2">Items</h4>
+                                    <div className="space-y-3">
+                                        {selectedOrder.items && selectedOrder.items.map((item, idx) => (
+                                            <div key={idx} className="flex justify-between items-start text-sm bg-gray-50 p-2 rounded-sm border border-gray-100">
                                                 <div>
-                                                    <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
-                                                    <select
-                                                        value={updates.status}
-                                                        onChange={(e) => handleUpdateChange(order.id, 'status', e.target.value)}
-                                                        className="w-full text-sm border-gray-300 rounded-sm focus:border-gold-500 focus:ring-1 focus:ring-gold-500 p-2 border"
-                                                    >
-                                                        {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                                                    </select>
+                                                    <p className="font-medium text-gray-900">{item.title}</p>
+                                                    <p className="text-gray-500 text-xs mt-1">Variant: {item.selectedVariant || 'Default'} | Qty: {item.quantity}</p>
                                                 </div>
-
-                                                <div>
-                                                    <label className="block text-xs font-medium text-gray-600 mb-1">Tracking No.</label>
-                                                    <input
-                                                        type="text"
-                                                        value={updates.tracking}
-                                                        onChange={(e) => handleUpdateChange(order.id, 'tracking', e.target.value)}
-                                                        placeholder="Enter tracking info"
-                                                        className="w-full text-sm border-gray-300 rounded-sm focus:border-gold-500 focus:ring-1 focus:ring-gold-500 p-2 border"
-                                                    />
-                                                </div>
-
-                                                <button
-                                                    onClick={() => handleUpdateOrder(order.id)}
-                                                    className="w-full mt-2 bg-green-600 text-white py-2 px-4 rounded-sm hover:bg-green-700 flex items-center justify-center gap-2 text-sm font-medium transition-colors"
-                                                >
-                                                    <MessageCircle size={16} /> Update & Open WhatsApp
-                                                </button>
+                                                <p className="font-medium text-gray-900">Rs. {(item.price * item.quantity).toFixed(2)}</p>
                                             </div>
-                                        </div>
-
-                                        <h4 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-2">Items</h4>
-                                        <div className="space-y-3">
-                                            {order.items && order.items.map((item, idx) => (
-                                                <div key={idx} className="flex justify-between items-start text-sm">
-                                                    <div>
-                                                        <p className="font-medium">{item.title}</p>
-                                                        <p className="text-gray-500 text-xs">Variant: {item.selectedVariant || 'Default'} | Qty: {item.quantity}</p>
-                                                    </div>
-                                                    <p className="font-medium">Rs. {(item.price * item.quantity).toFixed(2)}</p>
-                                                </div>
-                                            ))}
-                                            <div className="border-t pt-2 mt-2 flex justify-between font-bold text-base border-gray-100 pt-1">
-                                                <span>Total</span>
-                                                <span>Rs. {parseFloat(order.totalAmount).toFixed(2)}</span>
-                                            </div>
+                                        ))}
+                                        <div className="border-t pt-3 mt-4 flex justify-between font-bold text-lg border-gray-200">
+                                            <span>Total</span>
+                                            <span>Rs. {parseFloat(selectedOrder.totalAmount).toFixed(2)}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        )})}
+                        </div>
                     </div>
-                )}
+                </div>
+            )}
+          </div>
+      ) : activeTab === 'offers' ? (
+        // Offers View
+        <div className="bg-white p-6 shadow-sm border border-gray-100 max-w-2xl mx-auto">
+            <h2 className="text-xl font-serif mb-6 border-b pb-2">Manage Offers</h2>
+            <form onSubmit={handleSaveOffers} className="space-y-6">
+                <div>
+                    <h3 className="text-lg font-medium text-gray-800 mb-2">Free Shipping Offer</h3>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Free Shipping for Orders Above (Rs.)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      value={freeShippingThreshold}
+                      onChange={(e) => setFreeShippingThreshold(e.target.value)}
+                      placeholder="e.g. 5000"
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Leave blank or 0 to disable.</p>
+                </div>
+
+                <div className="border-t border-gray-100 pt-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-medium text-gray-800">Seasonal Offer</h3>
+                        <label className="flex items-center cursor-pointer">
+                            <div className="relative">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only"
+                                    checked={seasonalOfferActive}
+                                    onChange={(e) => setSeasonalOfferActive(e.target.checked)}
+                                />
+                                <div className={`block w-10 h-6 rounded-full transition-colors ${seasonalOfferActive ? 'bg-gold-500' : 'bg-gray-300'}`}></div>
+                                <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${seasonalOfferActive ? 'transform translate-x-4' : ''}`}></div>
+                            </div>
+                            <span className="ml-3 text-sm text-gray-700 font-medium">Active</span>
+                        </label>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Offer Title</label>
+                            <input
+                              type="text"
+                              value={seasonalOfferTitle}
+                              onChange={(e) => setSeasonalOfferTitle(e.target.value)}
+                              placeholder="e.g. Summer Sale! 20% Off"
+                              className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Offer Description</label>
+                            <textarea
+                              rows="3"
+                              value={seasonalOfferDescription}
+                              onChange={(e) => setSeasonalOfferDescription(e.target.value)}
+                              placeholder="e.g. Use code SUMMER20 at checkout."
+                              className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <button
+                    type="submit"
+                    disabled={loadingOffers}
+                    className="w-full bg-black text-white py-3 uppercase tracking-widest hover:bg-gold-600 transition-colors disabled:opacity-50"
+                >
+                    {loadingOffers ? 'Saving...' : 'Save Offers'}
+                </button>
+            </form>
+        </div>
+      ) : activeTab === 'categories' ? (
+        // Categories View
+        <div className="bg-white p-6 shadow-sm border border-gray-100 max-w-4xl mx-auto">
+            <h2 className="text-xl font-serif mb-6 border-b pb-2">Manage Categories</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {/* Form */}
+                <div className="md:col-span-1">
+                    <form onSubmit={handleSaveCategory} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
+                            <input
+                              type="text"
+                              required
+                              value={newCatName}
+                              onChange={(e) => setNewCatName(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Image URL (Optional)</label>
+                            <input
+                              type="text"
+                              value={newCatImage}
+                              onChange={(e) => setNewCatImage(e.target.value)}
+                              placeholder="For future display"
+                              className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                            />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                              type="submit"
+                              disabled={loadingCategories}
+                              className="flex-1 bg-black text-white py-2 text-sm uppercase tracking-widest hover:bg-gold-600 transition-colors disabled:opacity-50"
+                          >
+                              {editingCatId ? 'Update' : 'Add'}
+                          </button>
+                          {editingCatId && (
+                              <button
+                                  type="button"
+                                  onClick={() => { setEditingCatId(null); setNewCatName(""); setNewCatImage(""); }}
+                                  className="px-4 bg-gray-200 text-gray-700 py-2 text-sm uppercase tracking-widest hover:bg-gray-300 transition-colors"
+                              >
+                                  Cancel
+                              </button>
+                          )}
+                        </div>
+                    </form>
+                </div>
+
+                {/* List */}
+                <div className="md:col-span-2">
+                    {loadingCategories ? (
+                        <p className="text-gray-500">Loading categories...</p>
+                    ) : categoriesList.length === 0 ? (
+                        <p className="text-gray-500">No categories found.</p>
+                    ) : (
+                        <ul className="space-y-3">
+                            {categoriesList.map(cat => (
+                                <li key={cat.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-sm">
+                                    <div className="flex items-center gap-3">
+                                        {cat.imageUrl ? (
+                                            <img src={cat.imageUrl} alt="" className="w-10 h-10 object-cover rounded-sm" />
+                                        ) : (
+                                            <div className="w-10 h-10 bg-gray-100 flex items-center justify-center text-xs text-gray-400 rounded-sm">No Img</div>
+                                        )}
+                                        <span className="font-medium text-gray-800">{cat.name}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => handleEditCategory(cat)} className="p-1 text-blue-600 hover:text-blue-800">
+                                            <Edit2 size={16} />
+                                        </button>
+                                        <button onClick={() => handleDeleteCategory(cat.id)} className="p-1 text-red-600 hover:text-red-800">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
             </div>
+        </div>
       ) : activeTab === 'settings' ? (
         // Settings View
         <>
