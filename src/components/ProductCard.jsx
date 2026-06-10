@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const ProductCard = ({ product }) => {
-  const { id, title, price, imageUrl, category } = product;
+  const { id, title, price, originalPrice, imageUrl, category } = product;
   const [isHovered, setIsHovered] = useState(false);
 
   // Fallback image logic
@@ -49,7 +49,14 @@ const ProductCard = ({ product }) => {
           <div className="text-center space-y-1.5 w-full">
               <p className="text-xs text-gray-500 uppercase tracking-widest">{category}</p>
               <h3 className="text-lg font-serif text-gray-900 line-clamp-1">{title}</h3>
-              <p className="text-gold-600 font-medium">Rs. {parseFloat(price).toFixed(2)}</p>
+              <p className="text-gold-600 font-medium">
+                {originalPrice && (
+                  <span className="text-gray-400 line-through mr-2 text-sm">
+                    Rs. {parseFloat(originalPrice).toFixed(2)}
+                  </span>
+                )}
+                Rs. {parseFloat(price).toFixed(2)}
+              </p>
           </div>
           </div>
       </Link>

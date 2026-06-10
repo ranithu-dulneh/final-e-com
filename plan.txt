@@ -1,0 +1,23 @@
+1. **Setup Offers Page:**
+   - In `AdminPanel.jsx`, create an `offers` tab.
+   - Fetch/Save `settings/offers` which can include `freeShippingThreshold` and `seasonalOffer` details (title, description, active state).
+   - Show this link in the admin nav bar.
+2. **Setup Categories Page:**
+   - In `AdminPanel.jsx`, create a `categories` tab.
+   - Fetch/Save `settings/categories` array/object from Firebase.
+   - Allow adding Name and Image URL for a category.
+   - Show this link in the admin nav bar.
+3. **Refactor Product Adding:**
+   - Separate from Inventory, change to its own `add-product` tab.
+   - Fetch `settings/categories` for the secondary category dropdown.
+   - Add `originalPrice` field for "striked amount".
+   - Add `estimatedShippingDate` as a mandatory field (e.g. text input or number of days).
+4. **Refactor Inventory Page:**
+   - Update the table to be compact and non-expandable without scrolling.
+   - Remove the form side of the layout.
+5. **Refactor Orders Page:**
+   - Change the big blocks into a table with columns: ID, Date, Name, Address, Mobile, Status, Actions.
+   - Create a popup modal for clicking a row, which will show all details and allow updating tracking/status.
+6. **Update Frontend (ProductCard, ProductDetails, etc.):**
+   - Display `originalPrice` with strike-through if available.
+   - Display `estimatedShippingDate`.
