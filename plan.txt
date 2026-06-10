@@ -1,23 +1,24 @@
-1. **Setup Offers Page:**
-   - In `AdminPanel.jsx`, create an `offers` tab.
-   - Fetch/Save `settings/offers` which can include `freeShippingThreshold` and `seasonalOffer` details (title, description, active state).
-   - Show this link in the admin nav bar.
-2. **Setup Categories Page:**
-   - In `AdminPanel.jsx`, create a `categories` tab.
-   - Fetch/Save `settings/categories` array/object from Firebase.
-   - Allow adding Name and Image URL for a category.
-   - Show this link in the admin nav bar.
-3. **Refactor Product Adding:**
-   - Separate from Inventory, change to its own `add-product` tab.
-   - Fetch `settings/categories` for the secondary category dropdown.
-   - Add `originalPrice` field for "striked amount".
-   - Add `estimatedShippingDate` as a mandatory field (e.g. text input or number of days).
-4. **Refactor Inventory Page:**
-   - Update the table to be compact and non-expandable without scrolling.
-   - Remove the form side of the layout.
-5. **Refactor Orders Page:**
-   - Change the big blocks into a table with columns: ID, Date, Name, Address, Mobile, Status, Actions.
-   - Create a popup modal for clicking a row, which will show all details and allow updating tracking/status.
-6. **Update Frontend (ProductCard, ProductDetails, etc.):**
-   - Display `originalPrice` with strike-through if available.
-   - Display `estimatedShippingDate`.
+1. **Create Popup Form in AdminPanel:**
+   - In `AdminPanel.jsx`, update the `Offers` tab to include a new section to create/manage a "Popup Ad".
+   - The popup ad data should include:
+     - `isActive` (boolean)
+     - `heading` (text)
+     - `description` (text)
+     - `imageUrl` (text)
+     - `targetUrl` (text - URL path to navigate to when clicked, e.g., `/shop`, `/product/123`)
+     - `targetPage` (dropdown/select - where should the popup appear: e.g., 'All Pages', 'Home', 'Shop')
+   - Save this data to `settings/popupAd` in Firebase.
+2. **Create Popup Component:**
+   - Create a new component `src/components/PopupAd.jsx`.
+   - It will fetch `settings/popupAd` from Firebase when mounted (or use context if easier).
+   - Only show the popup if:
+     - It's active.
+     - The user hasn't closed it in the current session (`sessionStorage` check).
+     - The current path matches the selected `targetPage` (or 'All Pages').
+   - When clicked, it should navigate to the `targetUrl`.
+   - It should have a close 'X' button that saves to `sessionStorage` and hides the popup.
+3. **Integrate Popup Component:**
+   - Add `<PopupAd />` to `App.jsx` inside the `<Router>` (so it can use `useLocation` and `useNavigate`).
+4. **Testing & Pre-commit:**
+   - Ensure the app builds, the admin form saves correctly, and the popup renders when conditions are met.
+   - Run tests/linters.
