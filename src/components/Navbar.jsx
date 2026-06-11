@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import { ShoppingBag, User, Menu, X } from "lucide-react";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { currentUser } = useAuth();
 
   return (
     <nav className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-gray-100">
@@ -34,9 +36,15 @@ const Navbar = () => {
              <Link to="/about" className="text-gray-900 hover:text-gold-600 transition-colors uppercase tracking-widest text-sm">About</Link>
              <Link to="/contact" className="text-gray-900 hover:text-gold-600 transition-colors uppercase tracking-widest text-sm">Contact</Link>
              <div className="flex items-center space-x-4 border-l pl-6 ml-2 border-gray-200">
-                <Link to="/login" className="text-gray-900 hover:text-gold-600">
-                  <User size={20} />
-                </Link>
+                {currentUser ? (
+                  <Link to="/profile" className="text-gray-900 hover:text-gold-600">
+                    <User size={20} />
+                  </Link>
+                ) : (
+                  <Link to="/login" className="text-gray-900 hover:text-gold-600">
+                    <User size={20} />
+                  </Link>
+                )}
                 <Link to="/cart" className="text-gray-900 hover:text-gold-600">
                     <ShoppingBag size={20} />
                 </Link>
@@ -86,12 +94,12 @@ const Navbar = () => {
             </Link>
             <div className="border-t border-gray-100 w-full pt-4 mt-2 flex justify-center">
                 <Link
-                  to="/login"
+                  to={currentUser ? "/profile" : "/login"}
                   className="flex items-center gap-2 text-gray-900 hover:text-gold-600 px-3 py-2 uppercase tracking-widest text-sm"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <User size={20} />
-                  Login
+                  {currentUser ? "Profile" : "Login"}
                 </Link>
             </div>
           </div>

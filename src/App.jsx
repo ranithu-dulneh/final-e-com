@@ -6,6 +6,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 import Login from "./pages/Login";
+import Profile from "./pages/Profile";
 import AdminPanel from "./pages/AdminPanel";
 import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
@@ -38,6 +39,7 @@ function App() {
           <Route path="/terms" element={<Terms />} />
           <Route path="/order-confirmation" element={<OrderConfirmation />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/profile" element={<Profile />} />
             <Route
               path="/admin"
               element={
