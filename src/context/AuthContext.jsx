@@ -37,9 +37,16 @@ export const AuthProvider = ({ children }) => {
     return signInAnonymously(auth);
   };
 
-  const loginWithGoogle = () => {
+  const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
-    return signInWithPopup(auth, provider);
+    try {
+      return await signInWithPopup(auth, provider);
+    } catch (error) {
+      if (error.code === 'auth/unauthorized-domain') {
+        console.warn("Firebase Auth Error: Your current domain is not authorized for OAuth operations. Please go to the Firebase Console -> Authentication -> Settings -> Authorized domains, and add this domain (e.g., localhost or your Vercel URL).");
+      }
+      throw error;
+    }
   };
 
   const resetPassword = (email) => {
