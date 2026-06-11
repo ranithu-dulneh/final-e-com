@@ -1,22 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const ProductCard = ({ product }) => {
   const { id, title, price, originalPrice, imageUrl, category } = product;
   const [isHovered, setIsHovered] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Fallback image logic
-  let displayImage = "https://placehold.co/400x400?text=ZAFAIR";
+  let displayImages = ["https://placehold.co/400x400?text=ZAFAIR"];
   if (Array.isArray(imageUrl) && imageUrl.length > 0) {
-      displayImage = imageUrl[0];
+      displayImages = imageUrl;
   } else if (typeof imageUrl === 'string' && imageUrl) {
-      // If it's a comma separated string, take the first one
-      const split = imageUrl.split(',');
-      if (split.length > 0 && split[0].trim()) {
-          displayImage = split[0].trim();
+      const split = imageUrl.split(',').map(s => s.trim()).filter(Boolean);
+      if (split.length > 0) {
+          displayImages = split;
       }
   }
+
+  useEffect(() => {
+      let interval;
+      if (isHovered && displayImages.length > 1) {
+          interval = setInterval(() => {
+              setCurrentImageIndex((prev) => (prev + 1) % displayImages.length);
+          }, 1000); // Change image every 1 second
+      } else {
+          setCurrentImageIndex(0); // Reset on mouse leave
+      }
+      return () => clearInterval(interval);
+  }, [isHovered, displayImages.length]);
 
   return (
     <motion.div
@@ -32,13 +44,20 @@ const ProductCard = ({ product }) => {
           onMouseLeave={() => setIsHovered(false)}
           >
         <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden mb-4 rounded-md">
-            <img
-            src={displayImage}
-            alt={title}
-            className={`w-full h-full object-cover transition-transform duration-700 ease-in-out ${isHovered ? 'scale-105' : 'scale-100'}`}
-            />
+            <AnimatePresence initial={false}>
+                <motion.img
+                    key={currentImageIndex}
+                    src={displayImages[currentImageIndex]}
+                    alt={title}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1, scale: isHovered ? 1.05 : 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ opacity: { duration: 0.3 }, scale: { duration: 0.7, ease: "easeInOut" } }}
+                    className="absolute inset-0 w-full h-full object-cover"
+                />
+            </AnimatePresence>
             {/* Overlay */}
-            <div className={`absolute inset-0 bg-black/20 transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`} />
+            <div className={`absolute inset-0 bg-black/20 transition-opacity duration-300 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'}`} />
 
             {/* Action Button */}
             <button className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-11/12 bg-white text-black py-2.5 opacity-0 group-hover:opacity-100 transition-all duration-300 font-medium tracking-wide shadow-md hover:bg-black hover:text-white uppercase text-sm">
