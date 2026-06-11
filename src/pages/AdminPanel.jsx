@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
 import { ref, push, set, get, remove, update } from "firebase/database";
-import { Trash2, Edit2, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle, UploadCloud } from "lucide-react";
+import { Trash2, Edit2, Eye, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle, UploadCloud } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const STATUSES = [
   "Pending",
@@ -1231,11 +1232,11 @@ const AdminPanel = () => {
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category (Main/Sec/Sub)</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">Name</th>
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shipping (COD / Bank)</th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sub Category</th>
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Image</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
@@ -1245,45 +1246,50 @@ const AdminPanel = () => {
                                     if (Array.isArray(product.imageUrl) && product.imageUrl.length > 0) {
                                         previewImage = product.imageUrl[0];
                                     } else if (typeof product.imageUrl === 'string' && product.imageUrl) {
-                                        previewImage = product.imageUrl;
+                                        previewImage = product.imageUrl.split(',')[0].trim() || previewImage;
                                     }
 
                                     return (
-                                    <tr key={product.id}>
+                                    <tr key={product.id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center">
-                                                <div className="h-10 w-10 flex-shrink-0">
-                                                    <img className="h-10 w-10 object-cover" src={previewImage} alt="" />
-                                                </div>
-                                                <div className="ml-4">
-                                                    <div className="text-sm font-medium text-gray-900">{product.title}</div>
-                                                </div>
+                                            <div className="text-sm font-medium text-gray-900 truncate max-w-[200px] sm:max-w-xs md:max-w-sm" title={product.title}>
+                                                {product.title}
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                                {product.mainCategory || "Womens"} &gt; {product.category} {product.subCategory ? `> ${product.subCategory}` : ''}
-                                            </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             Rs. {product.price}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            Rs. {product.shippingCostCod || 0} / Rs. {product.shippingCostBank || 0}
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                {product.subCategory || product.category || "General"}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <Link
+                                                to={`/product/${product.id}`}
+                                                target="_blank"
+                                                className="text-blue-600 hover:text-blue-900 ml-4 inline-block"
+                                                title="View Details"
+                                            >
+                                                <Eye size={18} />
+                                            </Link>
                                             <button
                                                 onClick={() => handleEdit(product)}
                                                 className="text-indigo-600 hover:text-indigo-900 ml-4"
+                                                title="Edit Product"
                                             >
                                                 <Edit2 size={18} />
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(product.id)}
                                                 className="text-red-600 hover:text-red-900 ml-4"
+                                                title="Delete Product"
                                             >
                                                 <Trash2 size={18} />
                                             </button>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                                            <img className="h-10 w-10 object-cover inline-block border border-gray-200" src={previewImage} alt="" />
                                         </td>
                                     </tr>
                                     );
