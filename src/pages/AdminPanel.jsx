@@ -130,6 +130,8 @@ const AdminPanel = () => {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [originalPrice, setOriginalPrice] = useState("");
+  const [isNewArrival, setIsNewArrival] = useState(false);
+  const [isBestSeller, setIsBestSeller] = useState(false);
   const [shippingCostCod, setShippingCostCod] = useState("");
   const [shippingCostBank, setShippingCostBank] = useState("");
   const [estimatedShippingDate, setEstimatedShippingDate] = useState("");
@@ -336,6 +338,8 @@ const AdminPanel = () => {
         title,
         price,
         originalPrice: originalPrice || "",
+        isNewArrival,
+        isBestSeller,
         shippingCostCod: shippingCostCod || 0,
         shippingCostBank: shippingCostBank || 0,
         estimatedShippingDate,
@@ -581,6 +585,8 @@ const AdminPanel = () => {
     setTitle("");
     setPrice("");
     setOriginalPrice("");
+    setIsNewArrival(false);
+    setIsBestSeller(false);
     setShippingCostCod("");
     setShippingCostBank("");
     setEstimatedShippingDate("");
@@ -617,6 +623,8 @@ const AdminPanel = () => {
     setTitle(product.title);
     setPrice(product.price);
     setOriginalPrice(product.originalPrice || "");
+    setIsNewArrival(product.isNewArrival || false);
+    setIsBestSeller(product.isBestSeller || false);
     setShippingCostCod(product.shippingCostCod || "");
     setShippingCostBank(product.shippingCostBank || "");
     setEstimatedShippingDate(product.estimatedShippingDate || "");
@@ -784,6 +792,12 @@ const AdminPanel = () => {
                 >
                     <Package size={16} /> Categories
                 </button>
+                <button
+                    onClick={() => setActiveTab('home-settings')}
+                    className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'home-settings' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <Settings size={16} /> Home Page Settings
+                </button>
             </nav>
         </div>
         <button onClick={logout} className="flex items-center gap-2 hover:text-gold-500 transition-colors">
@@ -819,6 +833,17 @@ const AdminPanel = () => {
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                 />
+              </div>
+
+              <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={isNewArrival} onChange={e => setIsNewArrival(e.target.checked)} className="rounded-sm border-gray-300 text-gold-500 focus:ring-gold-500"/>
+                      <span className="text-sm font-medium text-gray-700">Mark as New Arrival</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={isBestSeller} onChange={e => setIsBestSeller(e.target.checked)} className="rounded-sm border-gray-300 text-gold-500 focus:ring-gold-500"/>
+                      <span className="text-sm font-medium text-gray-700">Mark as Best Seller</span>
+                  </label>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1762,6 +1787,50 @@ const AdminPanel = () => {
                     )}
                 </div>
             </div>
+        </div>
+      ) : activeTab === 'home-settings' ? (
+        // Home Page Settings View
+        <div className="bg-white p-6 shadow-sm border border-gray-100 max-w-4xl mx-auto">
+             <h2 className="text-xl font-serif mb-6 border-b pb-2">Home Page Settings</h2>
+             <p className="text-sm text-gray-500 mb-6">Manage products displayed in the "New Arrivals" and "Best Sellers" sections on the home page. You can mark products via the "Add Product" form.</p>
+
+             <div className="space-y-8">
+                 <div>
+                     <h3 className="text-lg font-medium text-gray-800 mb-4 border-l-2 border-gold-500 pl-2">New Arrivals</h3>
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                         {products.filter(p => p.isNewArrival).map(prod => (
+                             <div key={prod.id} className="border border-gray-200 p-2 rounded flex flex-col items-center text-center">
+                                 {prod.imageUrl && prod.imageUrl[0] ? (
+                                    <img src={prod.imageUrl[0]} alt="" className="w-16 h-16 object-cover rounded-sm mb-2" />
+                                ) : (
+                                    <div className="w-16 h-16 bg-gray-200 rounded-sm mb-2"></div>
+                                )}
+                                 <p className="text-xs font-medium line-clamp-1">{prod.title}</p>
+                                 <button onClick={async () => await update(ref(db, `products/${prod.id}`), { isNewArrival: false, updatedAt: new Date().toISOString() })} className="mt-2 text-[10px] uppercase tracking-widest text-red-500 hover:text-red-700">Remove</button>
+                             </div>
+                         ))}
+                         {products.filter(p => p.isNewArrival).length === 0 && <p className="text-sm text-gray-500 col-span-full">No products marked as New Arrival.</p>}
+                     </div>
+                 </div>
+
+                 <div>
+                     <h3 className="text-lg font-medium text-gray-800 mb-4 border-l-2 border-gold-500 pl-2">Best Sellers</h3>
+                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                         {products.filter(p => p.isBestSeller).map(prod => (
+                             <div key={prod.id} className="border border-gray-200 p-2 rounded flex flex-col items-center text-center">
+                                 {prod.imageUrl && prod.imageUrl[0] ? (
+                                    <img src={prod.imageUrl[0]} alt="" className="w-16 h-16 object-cover rounded-sm mb-2" />
+                                ) : (
+                                    <div className="w-16 h-16 bg-gray-200 rounded-sm mb-2"></div>
+                                )}
+                                 <p className="text-xs font-medium line-clamp-1">{prod.title}</p>
+                                 <button onClick={async () => await update(ref(db, `products/${prod.id}`), { isBestSeller: false, updatedAt: new Date().toISOString() })} className="mt-2 text-[10px] uppercase tracking-widest text-red-500 hover:text-red-700">Remove</button>
+                             </div>
+                         ))}
+                         {products.filter(p => p.isBestSeller).length === 0 && <p className="text-sm text-gray-500 col-span-full">No products marked as Best Seller.</p>}
+                     </div>
+                 </div>
+             </div>
         </div>
       ) : activeTab === 'settings' ? (
         // Settings View
