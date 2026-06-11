@@ -93,6 +93,11 @@ const AdminPanel = () => {
   const [seasonalOfferDescription, setSeasonalOfferDescription] = useState("");
   const [loadingOffers, setLoadingOffers] = useState(false);
 
+  const [marqueeActive, setMarqueeActive] = useState(false);
+  const [marqueeShowFreeShipping, setMarqueeShowFreeShipping] = useState(false);
+  const [marqueeShowSeasonal, setMarqueeShowSeasonal] = useState(false);
+  const [marqueeCustomText, setMarqueeCustomText] = useState("");
+
   const [popupActive, setPopupActive] = useState(false);
   const [popupHeading, setPopupHeading] = useState("");
   const [popupDescription, setPopupDescription] = useState("");
@@ -470,6 +475,11 @@ const AdminPanel = () => {
         setSeasonalOfferTitle(data.seasonalOfferTitle || "");
         setSeasonalOfferDescription(data.seasonalOfferDescription || "");
 
+        setMarqueeActive(data.marqueeActive || false);
+        setMarqueeShowFreeShipping(data.marqueeShowFreeShipping || false);
+        setMarqueeShowSeasonal(data.marqueeShowSeasonal || false);
+        setMarqueeCustomText(data.marqueeCustomText || "");
+
         setPopupActive(data.popupActive || false);
         setPopupHeading(data.popupHeading || "");
         setPopupDescription(data.popupDescription || "");
@@ -493,6 +503,10 @@ const AdminPanel = () => {
         seasonalOfferActive,
         seasonalOfferTitle,
         seasonalOfferDescription,
+        marqueeActive,
+        marqueeShowFreeShipping,
+        marqueeShowSeasonal,
+        marqueeCustomText,
         popupActive,
         popupHeading,
         popupDescription,
@@ -1486,6 +1500,16 @@ const AdminPanel = () => {
                       className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                     />
                     <p className="text-xs text-gray-500 mt-1">Leave blank or 0 to disable.</p>
+                    <div className="mt-2 flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            id="marqueeShowFreeShipping"
+                            checked={marqueeShowFreeShipping}
+                            onChange={(e) => setMarqueeShowFreeShipping(e.target.checked)}
+                            className="rounded-sm border-gray-300 text-gold-500 focus:ring-gold-500"
+                        />
+                        <label htmlFor="marqueeShowFreeShipping" className="text-sm text-gray-700">Show in Marquee</label>
+                    </div>
                 </div>
 
                 <div className="border-t border-gray-100 pt-6">
@@ -1524,6 +1548,48 @@ const AdminPanel = () => {
                               value={seasonalOfferDescription}
                               onChange={(e) => setSeasonalOfferDescription(e.target.value)}
                               placeholder="e.g. Use code SUMMER20 at checkout."
+                              className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                            />
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <input
+                                type="checkbox"
+                                id="marqueeShowSeasonal"
+                                checked={marqueeShowSeasonal}
+                                onChange={(e) => setMarqueeShowSeasonal(e.target.checked)}
+                                className="rounded-sm border-gray-300 text-gold-500 focus:ring-gold-500"
+                            />
+                            <label htmlFor="marqueeShowSeasonal" className="text-sm text-gray-700">Show in Marquee</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="border-t border-gray-100 pt-6 mt-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-lg font-medium text-gray-800">Announcement Marquee</h3>
+                        <label className="flex items-center cursor-pointer">
+                            <div className="relative">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only"
+                                    checked={marqueeActive}
+                                    onChange={(e) => setMarqueeActive(e.target.checked)}
+                                />
+                                <div className={`block w-10 h-6 rounded-full transition-colors ${marqueeActive ? 'bg-gold-500' : 'bg-gray-300'}`}></div>
+                                <div className={`absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform ${marqueeActive ? 'transform translate-x-4' : ''}`}></div>
+                            </div>
+                            <span className="ml-3 text-sm text-gray-700 font-medium">Active</span>
+                        </label>
+                    </div>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Custom Marquee Text</label>
+                            <input
+                              type="text"
+                              value={marqueeCustomText}
+                              onChange={(e) => setMarqueeCustomText(e.target.value)}
+                              placeholder="e.g. Welcome to our new store! Check out the latest arrivals."
                               className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                             />
                         </div>
