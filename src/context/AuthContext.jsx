@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signInAnonymously, sendPasswordResetEmail } from "firebase/auth";
+import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signInAnonymously, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../firebase";
 
 const AuthContext = createContext();
@@ -37,6 +37,11 @@ export const AuthProvider = ({ children }) => {
     return signInAnonymously(auth);
   };
 
+  const loginWithGoogle = () => {
+    const provider = new GoogleAuthProvider();
+    return signInWithPopup(auth, provider);
+  };
+
   const resetPassword = (email) => {
     return sendPasswordResetEmail(auth, email);
   };
@@ -50,6 +55,7 @@ export const AuthProvider = ({ children }) => {
     login,
     signup,
     loginAnonymously,
+    loginWithGoogle,
     resetPassword,
     logout,
   };
