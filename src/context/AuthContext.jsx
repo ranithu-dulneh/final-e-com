@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signInAnonymously } from "firebase/auth";
+import { onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, signInAnonymously, sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../firebase";
 
 const AuthContext = createContext();
@@ -37,6 +37,10 @@ export const AuthProvider = ({ children }) => {
     return signInAnonymously(auth);
   };
 
+  const resetPassword = (email) => {
+    return sendPasswordResetEmail(auth, email);
+  };
+
   const logout = () => {
     return signOut(auth);
   };
@@ -46,6 +50,7 @@ export const AuthProvider = ({ children }) => {
     login,
     signup,
     loginAnonymously,
+    resetPassword,
     logout,
   };
 

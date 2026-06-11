@@ -35,6 +35,8 @@ const Login = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-off-white px-4">
       <div className="max-w-md w-full bg-white p-8 shadow-sm border border-gray-100">
+        <h2 className="text-2xl font-serif text-center mb-8">Sign In</h2>
+
         {error && <div className="bg-red-50 text-red-600 p-3 text-sm mb-4 text-center">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -49,7 +51,12 @@ const Login = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 uppercase tracking-wide mb-1">Password</label>
+            <div className="flex justify-between items-center mb-1">
+               <label className="block text-sm font-medium text-gray-700 uppercase tracking-wide">Password</label>
+               <Link to="/forgot-password" className="text-xs text-gray-500 hover:text-black uppercase tracking-wider transition-colors">
+                  Forgot Password?
+               </Link>
+            </div>
             <input
               type="password"
               required
