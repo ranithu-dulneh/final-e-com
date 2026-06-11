@@ -1,10 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, Search, ShoppingBag, User } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
 
 const BottomNav = () => {
   const location = useLocation();
-  const { currentUser } = useAuth();
 
   const isActive = (path) => {
     return location.pathname === path ? "text-gold-600" : "text-gray-500 hover:text-gray-900";
@@ -25,7 +23,7 @@ const BottomNav = () => {
           <ShoppingBag size={24} />
           <span className="text-[10px] uppercase tracking-wider">Cart</span>
         </Link>
-        <Link to={currentUser ? "/profile" : "/login"} className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive(currentUser ? "/profile" : "/login")}`}>
+        <Link to="/profile" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive("/profile")}`}>
           <User size={24} />
           <span className="text-[10px] uppercase tracking-wider">Profile</span>
         </Link>
