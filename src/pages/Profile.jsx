@@ -21,17 +21,41 @@ const Profile = () => {
       <div className="flex-grow max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="flex justify-between items-center mb-8">
           <h1 className="font-serif text-3xl md:text-4xl text-gray-900 tracking-tight">Profile</h1>
-          <button
-            onClick={handleLogout}
-            className="text-sm uppercase tracking-wider text-gray-500 hover:text-black transition-colors"
-          >
-            Logout
-          </button>
+          {currentUser ? (
+            <button
+              onClick={handleLogout}
+              className="text-sm uppercase tracking-wider text-gray-500 hover:text-black transition-colors"
+            >
+              Logout
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate("/login")}
+              className="text-sm uppercase tracking-wider text-gray-500 hover:text-black transition-colors"
+            >
+              Login
+            </button>
+          )}
         </div>
 
         <div className="bg-white p-6 shadow-sm border border-gray-100 mb-8">
-          <h2 className="text-xl font-serif text-gray-900 mb-2">Welcome{currentUser?.email ? `, ${currentUser.email}` : ''}</h2>
-          <p className="text-gray-500 text-sm">Manage your account and view orders.</p>
+          {currentUser ? (
+             <>
+                <h2 className="text-xl font-serif text-gray-900 mb-2">Welcome{currentUser.displayName ? `, ${currentUser.displayName}` : (currentUser.email ? `, ${currentUser.email}` : '')}</h2>
+                <p className="text-gray-500 text-sm">Manage your account and view orders.</p>
+             </>
+          ) : (
+             <>
+                <h2 className="text-xl font-serif text-gray-900 mb-2">Welcome Guest</h2>
+                <p className="text-gray-500 text-sm mb-4">Sign in to manage your account and view your orders.</p>
+                <button
+                  onClick={() => navigate("/login")}
+                  className="bg-black text-white px-6 py-2 text-xs uppercase tracking-widest hover:bg-gold-600 transition-colors"
+                >
+                  Sign In
+                </button>
+             </>
+          )}
         </div>
 
         {/* Feature: Past Order Categorization */}
