@@ -17,6 +17,8 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Terms from "./pages/Terms";
 import PopupAd from "./components/PopupAd";
 import Marquee from "./components/Marquee";
+import BottomNav from "./components/BottomNav";
+import Profile from "./pages/Profile";
 
 function App() {
   useTrackVisit();
@@ -27,8 +29,9 @@ function App() {
       <Marquee />
       <AuthProvider>
         <CartProvider>
-          <Routes>
-            <Route path="/" element={<Home />} />
+          <div className="pb-16 md:pb-0">
+            <Routes>
+              <Route path="/" element={<Home />} />
           <Route path="/shop" element={<Shop />} />
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
@@ -36,17 +39,27 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/terms" element={<Terms />} />
-          <Route path="/order-confirmation" element={<OrderConfirmation />} />
-          <Route path="/login" element={<Login />} />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <AdminPanel />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
+              <Route path="/order-confirmation" element={<OrderConfirmation />} />
+              <Route path="/login" element={<Login />} />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminPanel />
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </div>
+          <BottomNav />
         </CartProvider>
       </AuthProvider>
     </Router>
