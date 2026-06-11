@@ -1,5 +1,6 @@
 import { trackSale } from "../utils/trackSales";
 import { useState, useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { db } from "../firebase";
@@ -10,7 +11,18 @@ import { CreditCard, Truck, CheckCircle, AlertCircle, Building, Upload } from "l
 const Checkout = () => {
   const { cartItems, getCartTotal, clearCart } = useCart();
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
   const total = getCartTotal();
+
+    useEffect(() => {
+    if (currentUser) {
+      setFormData(prev => ({
+        ...prev,
+        name: prev.name || currentUser.displayName || "",
+        email: prev.email || currentUser.email || ""
+      }));
+    }
+  }, [currentUser]);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -128,6 +140,7 @@ const Checkout = () => {
       const finalTotal = total + deliveryCharge - appliedDiscount;
 
       const orderData = {
+        userId: currentUser ? currentUser.uid : null,
         customer: formData,
         items: cartItems,
         totalAmount: finalTotal > 0 ? finalTotal : 0,
