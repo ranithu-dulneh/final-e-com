@@ -16,6 +16,7 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Terms from "./pages/Terms";
 import PopupAd from "./components/PopupAd";
+import Marquee from "./components/Marquee";
 
 function App() {
   useTrackVisit();
@@ -23,6 +24,7 @@ function App() {
     <Router>
       <ScrollToTop />
       <PopupAd />
+      <Marquee />
       <AuthProvider>
         <CartProvider>
           <Routes>
