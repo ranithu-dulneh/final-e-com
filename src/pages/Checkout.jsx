@@ -2,6 +2,7 @@ import { trackSale } from "../utils/trackSales";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
 import { ref, push, set } from "firebase/database";
 import Navbar from "../components/Navbar";
@@ -9,6 +10,7 @@ import { CreditCard, Truck, CheckCircle, AlertCircle, Building, Upload } from "l
 
 const Checkout = () => {
   const { cartItems, getCartTotal, clearCart } = useCart();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   const total = getCartTotal();
 
@@ -24,6 +26,16 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (currentUser) {
+      setFormData(prev => ({
+        ...prev,
+        name: currentUser.displayName || prev.name,
+        email: currentUser.email || prev.email
+      }));
+    }
+  }, [currentUser]);
 
   const [enteredCoupon, setEnteredCoupon] = useState("");
   const [appliedDiscount, setAppliedDiscount] = useState(0);
@@ -129,6 +141,7 @@ const Checkout = () => {
 
       const orderData = {
         customer: formData,
+        userId: currentUser ? currentUser.uid : null,
         items: cartItems,
         totalAmount: finalTotal > 0 ? finalTotal : 0,
         subtotal: total,
