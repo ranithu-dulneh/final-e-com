@@ -4,7 +4,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef } from "react";
 import { motion } from "framer-motion";
 
-const HorizontalScrollGallery = ({ products, title, subtitle, bannerImage, bannerText, bannerLink = "/shop" }) => {
+const HorizontalScrollGallery = ({ products, categories, title, subtitle, bannerImage, bannerText, bannerLink = "/shop" }) => {
   const scrollRef = useRef(null);
 
   const scroll = (direction) => {
@@ -13,7 +13,11 @@ const HorizontalScrollGallery = ({ products, title, subtitle, bannerImage, banne
       scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
     }
   };
-  if (!products || products.length === 0) return null;
+
+  const hasProducts = products && products.length > 0;
+  const hasCategories = categories && categories.length > 0;
+
+  if (!hasProducts && !hasCategories) return null;
 
   return (
     <div className="w-full my-16">
@@ -78,8 +82,26 @@ const HorizontalScrollGallery = ({ products, title, subtitle, bannerImage, banne
 
         <div ref={scrollRef} className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-6 px-4 sm:px-6 lg:px-8 pb-8">
 
+          {hasCategories && categories.map((cat) => (
+            <div key={cat.id || cat.name} className="snap-start shrink-0 w-[160px] sm:w-[200px]">
+              <Link
+                to="/shop"
+                state={{ selectedMainCategory: cat.mainCategory || "Womens", selectedSecondaryCategory: cat.name }}
+                className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group h-full"
+              >
+                {cat.imageUrl ? (
+                  <img src={cat.imageUrl} alt={cat.name} className="w-24 h-24 object-cover rounded-full mb-4 shadow-sm group-hover:scale-105 transition-transform duration-300" />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-sm mb-4">
+                    <span className="text-gray-400 text-xs uppercase tracking-widest">{cat.name.substring(0, 2)}</span>
+                  </div>
+                )}
+                <span className="font-serif text-lg text-gray-900 text-center">{cat.name}</span>
+              </Link>
+            </div>
+          ))}
 
-          {products.slice(0, 10).map((product) => (
+          {hasProducts && products.slice(0, 10).map((product) => (
             <div key={product.id} className="snap-start shrink-0 w-[280px] sm:w-[320px]">
               <ProductCard product={product} />
             </div>
