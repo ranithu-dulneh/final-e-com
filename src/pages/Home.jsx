@@ -6,10 +6,14 @@ import Navbar from "../components/Navbar";
 import { db } from "../firebase";
 import { ref, get } from "firebase/database";
 import { motion } from "framer-motion";
+import womensBanner from "../assets/womens_banner.png";
+import mensBanner from "../assets/mens_banner.png";
 
 const Home = () => {
   const [newArrivals, setNewArrivals] = useState([]);
   const [bestSellers, setBestSellers] = useState([]);
+  const [womensCollection, setWomensCollection] = useState([]);
+  const [mensCollection, setMensCollection] = useState([]);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -24,9 +28,13 @@ const Home = () => {
 
           setNewArrivals(productsData.filter(p => p.isNewArrival));
           setBestSellers(productsData.filter(p => p.isBestSeller));
+          setWomensCollection(productsData.filter(p => p.isWomensCollection));
+          setMensCollection(productsData.filter(p => p.isMensCollection));
         } else {
             setNewArrivals([]);
             setBestSellers([]);
+            setWomensCollection([]);
+            setMensCollection([]);
         }
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -50,11 +58,33 @@ const Home = () => {
             />
         )}
 
-        {bestSellers.length > 0 && (
+                {bestSellers.length > 0 && (
             <HorizontalScrollGallery
               products={bestSellers}
               title="Best Sellers"
               subtitle="Most Loved"
+            />
+        )}
+
+        {womensCollection.length > 0 && (
+            <HorizontalScrollGallery
+              products={womensCollection}
+              title="Womens Collection"
+              subtitle="Elegance Redefined"
+              bannerImage={womensBanner}
+              bannerText="Womens collection"
+              bannerLink="/shop"
+            />
+        )}
+
+        {mensCollection.length > 0 && (
+            <HorizontalScrollGallery
+              products={mensCollection}
+              title="Mens Collection"
+              subtitle="Refined Masculinity"
+              bannerImage={mensBanner}
+              bannerText="Mens collection"
+              bannerLink="/shop"
             />
         )}
       </main>
