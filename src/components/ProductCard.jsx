@@ -35,15 +35,16 @@ const ProductCard = ({ product }) => {
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
+      transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       <Link to={`/product/${id}`} className="block">
           <div
-          className="group relative flex flex-col items-center bg-white p-4 rounded-lg transition-all duration-300 hover:shadow-xl"
+          className="group relative flex flex-col items-center bg-white p-2 sm:p-4 rounded-lg transition-all duration-300 hover:shadow-xl"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           >
         <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden mb-4 rounded-md">
+            {originalPrice && <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] sm:text-xs font-bold px-2 py-1 uppercase tracking-wider z-10 shadow-sm">SALE</div>}
             <AnimatePresence initial={false}>
                 <motion.img
                     key={currentImageIndex}
@@ -60,17 +61,17 @@ const ProductCard = ({ product }) => {
             <div className={`absolute inset-0 bg-black/20 transition-opacity duration-300 pointer-events-none ${isHovered ? 'opacity-100' : 'opacity-0'}`} />
 
             {/* Action Button */}
-            <button className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-11/12 bg-white text-black py-2.5 opacity-0 group-hover:opacity-100 transition-all duration-300 font-medium tracking-wide shadow-md hover:bg-black hover:text-white uppercase text-sm">
+            <button className="absolute bottom-4 left-1/2 transform -translate-x-1/2 w-11/12 bg-white/90 backdrop-blur-sm text-black py-2 md:py-2.5 opacity-0 group-hover:opacity-100 transition-all duration-300 font-medium tracking-wide shadow-md hover:bg-black hover:text-white uppercase text-xs md:text-sm">
               View Details
             </button>
         </div>
 
           <div className="text-center space-y-1.5 w-full">
-              <p className="text-xs text-gray-500 uppercase tracking-widest">{category}</p>
-              <h3 className="text-lg font-serif text-gray-900 line-clamp-1">{title}</h3>
-              <p className="text-gold-600 font-medium">
+              <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-widest">{category}</p>
+              <h3 className="text-sm sm:text-lg font-serif text-gray-900 line-clamp-1">{title}</h3>
+              <p className="text-gold-600 font-medium text-xs sm:text-base">
                 {originalPrice && (
-                  <span className="text-gray-400 line-through mr-2 text-sm">
+                  <span className="text-gray-400 line-through mr-1 sm:mr-2 text-[10px] sm:text-sm">
                     Rs. {parseFloat(originalPrice).toFixed(2)}
                   </span>
                 )}

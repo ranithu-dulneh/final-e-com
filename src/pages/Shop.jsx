@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import Navbar from "../components/Navbar";
 import ProductGallery from "../components/ProductGallery";
 import { db } from "../firebase";
@@ -116,10 +117,21 @@ const Shop = () => {
 
       <div className="bg-white py-16 border-b border-gray-100">
          <div className="max-w-7xl mx-auto px-4 text-center">
-            <h1 className="text-4xl font-serif text-gray-900 mb-4">The Collection</h1>
-            <p className="text-gray-500 max-w-2xl mx-auto font-light">Explore our complete range of exquisite jewelry and gifts.</p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <h1 className="text-4xl font-serif text-gray-900 mb-4">The Collection</h1>
+              <p className="text-gray-500 max-w-2xl mx-auto font-light">Explore our complete range of exquisite jewelry and gifts.</p>
+            </motion.div>
 
-            <div className="max-w-4xl mx-auto mt-8 flex flex-col items-center gap-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="max-w-4xl mx-auto mt-8 flex flex-col items-center gap-6"
+            >
                 {/* Main Category Filter */}
                 {mainCategories.length > 1 && (
                   <div className="flex flex-wrap gap-2 justify-center">
@@ -188,7 +200,7 @@ const Shop = () => {
                     />
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                 </div>
-            </div>
+            </motion.div>
          </div>
       </div>
 
