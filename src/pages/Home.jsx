@@ -12,11 +12,11 @@ import mensBanner from "../assets/mens_banner.png";
 const Home = () => {
   const [newArrivals, setNewArrivals] = useState([]);
   const [bestSellers, setBestSellers] = useState([]);
-  const [womensCollection, setWomensCollection] = useState([]);
-  const [mensCollection, setMensCollection] = useState([]);
+  const [womensCategories, setWomensCategories] = useState([]);
+  const [mensCategories, setMensCategories] = useState([]);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchProductsAndCategories = async () => {
       try {
         const snapshot = await get(ref(db, "products"));
         if (snapshot.exists()) {
@@ -28,20 +28,27 @@ const Home = () => {
 
           setNewArrivals(productsData.filter(p => p.isNewArrival));
           setBestSellers(productsData.filter(p => p.isBestSeller));
-          setWomensCollection(productsData.filter(p => p.isWomensCollection));
-          setMensCollection(productsData.filter(p => p.isMensCollection));
         } else {
             setNewArrivals([]);
             setBestSellers([]);
-            setWomensCollection([]);
-            setMensCollection([]);
+        }
+
+        const catSnapshot = await get(ref(db, "settings/categories"));
+        if (catSnapshot.exists()) {
+            const data = catSnapshot.val();
+            const cats = Object.keys(data).map(key => ({ id: key, ...data[key] }));
+            setWomensCategories(cats.filter(c => (c.mainCategory || "Womens") === "Womens"));
+            setMensCategories(cats.filter(c => c.mainCategory === "Mens"));
+        } else {
+            setWomensCategories([]);
+            setMensCategories([]);
         }
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error("Error fetching data:", error);
       }
     };
 
-    fetchProducts();
+    fetchProductsAndCategories();
   }, []);
 
   return (
@@ -66,9 +73,9 @@ const Home = () => {
             />
         )}
 
-        {womensCollection.length > 0 && (
+        {womensCategories.length > 0 && (
             <HorizontalScrollGallery
-              products={womensCollection}
+              categories={womensCategories}
               title="Womens Collection"
               subtitle="Elegance Redefined"
               bannerImage={womensBanner}
@@ -77,9 +84,9 @@ const Home = () => {
             />
         )}
 
-        {mensCollection.length > 0 && (
+        {mensCategories.length > 0 && (
             <HorizontalScrollGallery
-              products={mensCollection}
+              categories={mensCategories}
               title="Mens Collection"
               subtitle="Refined Masculinity"
               bannerImage={mensBanner}

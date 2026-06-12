@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import ProductGallery from "../components/ProductGallery";
 import { db } from "../firebase";
@@ -6,12 +7,13 @@ import { ref, get } from "firebase/database";
 import { Search } from "lucide-react";
 
 const Shop = () => {
+  const location = useLocation();
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const [selectedMainCategory, setSelectedMainCategory] = useState("All");
-  const [selectedSecondaryCategory, setSelectedSecondaryCategory] = useState("All");
+  const [selectedMainCategory, setSelectedMainCategory] = useState(location.state?.selectedMainCategory || "All");
+  const [selectedSecondaryCategory, setSelectedSecondaryCategory] = useState(location.state?.selectedSecondaryCategory || "All");
   const [selectedSubCategory, setSelectedSubCategory] = useState("All");
 
   const [mainCategories, setMainCategories] = useState(["All"]);
@@ -60,9 +62,11 @@ const Shop = () => {
       const filteredForMain = products.filter(p => p.mainCategory === selectedMainCategory);
       const uniqueSec = ["All", ...new Set(filteredForMain.map(p => p.category?.trim()).filter(Boolean))];
       setSecondaryCategories(uniqueSec);
-      setSelectedSecondaryCategory("All");
+      if (!location.state?.selectedSecondaryCategory || location.state?.selectedMainCategory !== selectedMainCategory) {
+          setSelectedSecondaryCategory("All");
+      }
     }
-  }, [selectedMainCategory, products]);
+  }, [selectedMainCategory, products, location.state]);
 
   // Effect to update available sub categories when secondary category changes
   useEffect(() => {
