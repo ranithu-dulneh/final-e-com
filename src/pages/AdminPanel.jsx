@@ -133,6 +133,8 @@ const AdminPanel = () => {
   const [originalPrice, setOriginalPrice] = useState("");
   const [isNewArrival, setIsNewArrival] = useState(false);
   const [isBestSeller, setIsBestSeller] = useState(false);
+  const [isWomensCollection, setIsWomensCollection] = useState(false);
+  const [isMensCollection, setIsMensCollection] = useState(false);
   const [shippingCostCod, setShippingCostCod] = useState("");
   const [shippingCostBank, setShippingCostBank] = useState("");
   const [estimatedShippingDate, setEstimatedShippingDate] = useState("");
@@ -341,6 +343,8 @@ const AdminPanel = () => {
         originalPrice: originalPrice || "",
         isNewArrival,
         isBestSeller,
+        isWomensCollection,
+        isMensCollection,
         shippingCostCod: shippingCostCod || 0,
         shippingCostBank: shippingCostBank || 0,
         estimatedShippingDate,
@@ -626,6 +630,8 @@ const AdminPanel = () => {
     setOriginalPrice(product.originalPrice || "");
     setIsNewArrival(product.isNewArrival || false);
     setIsBestSeller(product.isBestSeller || false);
+    setIsWomensCollection(product.isWomensCollection || false);
+    setIsMensCollection(product.isMensCollection || false);
     setShippingCostCod(product.shippingCostCod || "");
     setShippingCostBank(product.shippingCostBank || "");
     setEstimatedShippingDate(product.estimatedShippingDate || "");
@@ -844,6 +850,14 @@ const AdminPanel = () => {
                   <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={isBestSeller} onChange={e => setIsBestSeller(e.target.checked)} className="rounded-sm border-gray-300 text-gold-500 focus:ring-gold-500"/>
                       <span className="text-sm font-medium text-gray-700">Mark as Best Seller</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={isWomensCollection} onChange={e => setIsWomensCollection(e.target.checked)} className="rounded-sm border-gray-300 text-gold-500 focus:ring-gold-500"/>
+                      <span className="text-sm font-medium text-gray-700">Mark as Womens Collection</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={isMensCollection} onChange={e => setIsMensCollection(e.target.checked)} className="rounded-sm border-gray-300 text-gold-500 focus:ring-gold-500"/>
+                      <span className="text-sm font-medium text-gray-700">Mark as Mens Collection</span>
                   </label>
               </div>
 
