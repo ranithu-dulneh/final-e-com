@@ -592,6 +592,8 @@ const AdminPanel = () => {
     setOriginalPrice("");
     setIsNewArrival(false);
     setIsBestSeller(false);
+    setIsWomensCollection(false);
+    setIsMensCollection(false);
     setShippingCostCod("");
     setShippingCostBank("");
     setEstimatedShippingDate("");
