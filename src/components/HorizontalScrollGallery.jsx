@@ -1,9 +1,18 @@
 import { Link } from "react-router-dom";
 import ProductCard from "./ProductCard";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { useRef } from "react";
 import { motion } from "framer-motion";
 
 const HorizontalScrollGallery = ({ products, title, subtitle, bannerImage, bannerText, bannerLink = "/shop" }) => {
+  const scrollRef = useRef(null);
+
+  const scroll = (direction) => {
+    if (scrollRef.current) {
+      const scrollAmount = direction === "left" ? -344 : 344;
+      scrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+    }
+  };
   if (!products || products.length === 0) return null;
 
   return (
@@ -53,8 +62,21 @@ const HorizontalScrollGallery = ({ products, title, subtitle, bannerImage, banne
         </div>
       )}
 
-      <div className="relative w-full">
-        <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto pb-8">
+      <div className="relative w-full max-w-7xl mx-auto group/gallery">
+        <button
+          onClick={() => scroll("left")}
+          className="absolute left-2 md:left-4 top-[calc(50%-2rem)] z-10 w-12 h-12 bg-white/80 hover:bg-white text-gray-800 rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover/gallery:opacity-100 transition-opacity duration-300 backdrop-blur-sm border border-gray-200 hidden md:flex"
+        >
+          <ChevronLeft size={24} />
+        </button>
+        <button
+          onClick={() => scroll("right")}
+          className="absolute right-2 md:right-4 top-[calc(50%-2rem)] z-10 w-12 h-12 bg-white/80 hover:bg-white text-gray-800 rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover/gallery:opacity-100 transition-opacity duration-300 backdrop-blur-sm border border-gray-200 hidden md:flex"
+        >
+          <ChevronRight size={24} />
+        </button>
+
+        <div ref={scrollRef} className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-6 px-4 sm:px-6 lg:px-8 pb-8">
 
 
           {products.slice(0, 10).map((product) => (
