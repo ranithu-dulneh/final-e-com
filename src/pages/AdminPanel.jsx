@@ -111,6 +111,7 @@ const AdminPanel = () => {
   const [loadingCategories, setLoadingCategories] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [newCatImage, setNewCatImage] = useState("");
+  const [newCatMainCategory, setNewCatMainCategory] = useState("Womens");
   const [editingCatId, setEditingCatId] = useState(null);
 
   // Products State
@@ -436,17 +437,20 @@ const AdminPanel = () => {
       if (editingCatId) {
         await update(ref(db, `settings/categories/${editingCatId}`), {
           name: newCatName,
-          imageUrl: newCatImage
+          imageUrl: newCatImage,
+          mainCategory: newCatMainCategory
         });
       } else {
         const newRef = push(ref(db, 'settings/categories'));
         await set(newRef, {
           name: newCatName,
-          imageUrl: newCatImage
+          imageUrl: newCatImage,
+          mainCategory: newCatMainCategory
         });
       }
       setNewCatName("");
       setNewCatImage("");
+      setNewCatMainCategory("Womens");
       setEditingCatId(null);
       fetchCategories();
     } catch (error) {
@@ -471,6 +475,7 @@ const AdminPanel = () => {
     setEditingCatId(cat.id);
     setNewCatName(cat.name);
     setNewCatImage(cat.imageUrl || "");
+    setNewCatMainCategory(cat.mainCategory || "Womens");
   };
 
   const fetchOffers = async () => {
@@ -1756,6 +1761,18 @@ const AdminPanel = () => {
                               className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                             />
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Main Category</label>
+                            <select
+                                required
+                                value={newCatMainCategory}
+                                onChange={(e) => setNewCatMainCategory(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none bg-white"
+                            >
+                                <option value="Womens">Womens</option>
+                                <option value="Mens">Mens</option>
+                            </select>
+                        </div>
                         <div className="flex gap-2">
                           <button
                               type="submit"
@@ -1767,7 +1784,7 @@ const AdminPanel = () => {
                           {editingCatId && (
                               <button
                                   type="button"
-                                  onClick={() => { setEditingCatId(null); setNewCatName(""); setNewCatImage(""); }}
+                                  onClick={() => { setEditingCatId(null); setNewCatName(""); setNewCatImage(""); setNewCatMainCategory("Womens"); }}
                                   className="px-4 bg-gray-200 text-gray-700 py-2 text-sm uppercase tracking-widest hover:bg-gray-300 transition-colors"
                               >
                                   Cancel
@@ -1793,7 +1810,10 @@ const AdminPanel = () => {
                                         ) : (
                                             <div className="w-10 h-10 bg-gray-100 flex items-center justify-center text-xs text-gray-400 rounded-sm">No Img</div>
                                         )}
-                                        <span className="font-medium text-gray-800">{cat.name}</span>
+                                        <div className="flex flex-col">
+                                          <span className="font-medium text-gray-800">{cat.name}</span>
+                                          <span className="text-xs text-gray-500">{cat.mainCategory || 'Womens'}</span>
+                                        </div>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <button onClick={() => handleEditCategory(cat)} className="p-1 text-blue-600 hover:text-blue-800">

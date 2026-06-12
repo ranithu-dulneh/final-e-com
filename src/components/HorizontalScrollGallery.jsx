@@ -4,7 +4,7 @@ import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef } from "react";
 import { motion } from "framer-motion";
 
-const HorizontalScrollGallery = ({ products, title, subtitle, bannerImage, bannerText, bannerLink = "/shop" }) => {
+const HorizontalScrollGallery = ({ products, title, subtitle, bannerImage, bannerText, bannerLink = "/shop", categories = [] }) => {
   const scrollRef = useRef(null);
 
   const scroll = (direction) => {
@@ -59,6 +59,28 @@ const HorizontalScrollGallery = ({ products, title, subtitle, bannerImage, banne
                  </div>
              </div>
           </Link>
+
+          {categories && categories.length > 0 && (
+            <div className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-4 mt-6 pb-2">
+               {categories.map((cat) => (
+                  <Link
+                      key={cat.id}
+                      to="/shop"
+                      state={{ mainCategory: cat.mainCategory || "Womens", category: cat.name }}
+                      className="snap-start shrink-0 w-32 sm:w-40 md:w-48 group flex flex-col items-center"
+                  >
+                      <div className="w-full aspect-square rounded-full overflow-hidden bg-gray-100 mb-3 border-2 border-transparent group-hover:border-gold-400 transition-all duration-300 shadow-sm">
+                          {cat.imageUrl ? (
+                              <img src={cat.imageUrl} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No Image</div>
+                          )}
+                      </div>
+                      <span className="text-sm font-medium text-gray-800 text-center group-hover:text-gold-600 transition-colors duration-300">{cat.name}</span>
+                  </Link>
+               ))}
+            </div>
+          )}
         </div>
       )}
 
