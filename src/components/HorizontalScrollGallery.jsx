@@ -9,6 +9,7 @@ const HorizontalScrollGallery = ({ products, title, subtitle, bannerImage, banne
   return (
     <div className="w-full my-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+        {!bannerImage && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -28,17 +29,24 @@ const HorizontalScrollGallery = ({ products, title, subtitle, bannerImage, banne
           )}
           <div className="w-24 h-1 bg-gold-400 mx-auto" />
         </motion.div>
+      )}
       </div>
 
             {bannerImage && (
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
           <Link to={bannerLink} className="block relative w-full h-48 sm:h-64 md:h-80 lg:h-96 rounded-lg overflow-hidden group">
              <img src={bannerImage} alt={bannerText} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-             <div className="absolute inset-0 bg-black/30 transition-opacity duration-300 group-hover:bg-black/40 flex flex-col items-center justify-center p-6 text-center">
-                 <h3 className="text-white font-serif text-3xl md:text-5xl mb-4 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">{bannerText}</h3>
-                 <div className="flex items-center text-white text-lg font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                     <span>Shop Now</span>
-                     <ArrowRight size={20} className="ml-2" />
+             <div className="absolute inset-0 bg-black/40 transition-opacity duration-300 group-hover:bg-black/50 flex flex-col items-center justify-center p-6 text-center">
+                 {subtitle && (
+                    <span className="text-gold-400 uppercase tracking-widest text-sm md:text-base font-medium mb-2 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
+                      {subtitle}
+                    </span>
+                 )}
+                 <h3 className="text-white font-serif text-3xl md:text-5xl translate-y-2 group-hover:translate-y-0 transition-transform duration-300">{bannerText}</h3>
+
+                 <div className="absolute bottom-6 right-6 flex items-center text-white/70 hover:text-white transition-colors duration-300 text-sm md:text-base font-medium">
+                     <span className="tracking-widest uppercase">Shop More</span>
+                     <ArrowRight size={18} className="ml-2" />
                  </div>
              </div>
           </Link>
