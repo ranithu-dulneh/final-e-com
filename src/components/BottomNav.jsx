@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Store, ShoppingBag, User } from "lucide-react";
+import { Home, Search, ShoppingBag, User } from "lucide-react";
 
 const BottomNav = () => {
   const location = useLocation();
@@ -16,8 +16,8 @@ const BottomNav = () => {
           <span className="text-[10px] uppercase tracking-wider">Home</span>
         </Link>
         <Link to="/shop" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive("/shop")}`}>
-          <Store size={24} />
-          <span className="text-[10px] uppercase tracking-wider">Shop</span>
+          <Search size={24} />
+          <span className="text-[10px] uppercase tracking-wider">Search</span>
         </Link>
         <Link to="/cart" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive("/cart")}`}>
           <ShoppingBag size={24} />

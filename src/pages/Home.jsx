@@ -15,11 +15,8 @@ const Home = () => {
   const [womensCollection, setWomensCollection] = useState([]);
   const [mensCollection, setMensCollection] = useState([]);
 
-  const [womensCategories, setWomensCategories] = useState([]);
-  const [mensCategories, setMensCategories] = useState([]);
-
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchProducts = async () => {
       try {
         const snapshot = await get(ref(db, "products"));
         if (snapshot.exists()) {
@@ -39,27 +36,12 @@ const Home = () => {
             setWomensCollection([]);
             setMensCollection([]);
         }
-
-        const catSnapshot = await get(ref(db, "settings/categories"));
-        if (catSnapshot.exists()) {
-            const data = catSnapshot.val();
-            const categoriesData = Object.keys(data).map(key => ({
-                id: key,
-                ...data[key]
-            }));
-
-            setWomensCategories(categoriesData.filter(c => !c.mainCategory || c.mainCategory === "Womens"));
-            setMensCategories(categoriesData.filter(c => c.mainCategory === "Mens"));
-        } else {
-            setWomensCategories([]);
-            setMensCategories([]);
-        }
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching products:", error);
       }
     };
 
-    fetchData();
+    fetchProducts();
   }, []);
 
   return (
@@ -92,7 +74,6 @@ const Home = () => {
               bannerImage={womensBanner}
               bannerText="Womens collection"
               bannerLink="/shop"
-              categories={womensCategories}
             />
         )}
 
@@ -104,7 +85,6 @@ const Home = () => {
               bannerImage={mensBanner}
               bannerText="Mens collection"
               bannerLink="/shop"
-              categories={mensCategories}
             />
         )}
       </main>
