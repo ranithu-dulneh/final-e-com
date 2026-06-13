@@ -1,9 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Star } from 'lucide-react';
 
 const ProductCard = ({ product }) => {
-  const { id, title, price, originalPrice, imageUrl, category } = product;
+  const { id, title, price, originalPrice, imageUrl, category, reviews } = product;
+
+  let averageRating = 0;
+  let reviewCount = 0;
+  if (reviews) {
+      const reviewArray = Object.values(reviews);
+      reviewCount = reviewArray.length;
+      if (reviewCount > 0) {
+          const sum = reviewArray.reduce((acc, curr) => acc + (curr.rating || 0), 0);
+          averageRating = sum / reviewCount;
+      }
+  }
   const [isHovered, setIsHovered] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -69,6 +81,22 @@ const ProductCard = ({ product }) => {
           <div className="text-center space-y-1.5 w-full">
               <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-widest">{category}</p>
               <h3 className="text-sm sm:text-lg font-serif text-gray-900 line-clamp-1">{title}</h3>
+
+              {reviewCount > 0 && (
+                  <div className="flex items-center gap-1 justify-center mt-1">
+                      <div className="flex">
+                          {[1, 2, 3, 4, 5].map(star => (
+                              <Star
+                                  key={star}
+                                  size={12}
+                                  className={star <= Math.round(averageRating) ? "text-yellow-400 fill-current" : "text-gray-300"}
+                              />
+                          ))}
+                      </div>
+                      <span className="text-[10px] text-gray-500">({reviewCount})</span>
+                  </div>
+              )}
+
               <p className="text-gold-600 font-medium text-xs sm:text-base">
                 {originalPrice && (
                   <span className="text-gray-400 line-through mr-1 sm:mr-2 text-[10px] sm:text-sm">
