@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Hero from "../components/Hero";
 import ProductGallery from "../components/ProductGallery";
@@ -5,15 +6,19 @@ import HorizontalScrollGallery from "../components/HorizontalScrollGallery";
 import Navbar from "../components/Navbar";
 import { db } from "../firebase";
 import { ref, get } from "firebase/database";
-import { motion } from "framer-motion";
+
 import womensBanner from "../assets/womens_banner.png";
 import mensBanner from "../assets/mens_banner.png";
+import { useScrollRestoration } from "../hooks/useScrollRestoration";
 
 const Home = () => {
   const [newArrivals, setNewArrivals] = useState([]);
   const [bestSellers, setBestSellers] = useState([]);
   const [womensCategories, setWomensCategories] = useState([]);
   const [mensCategories, setMensCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useScrollRestoration("home", !loading);
 
   useEffect(() => {
     const fetchProductsAndCategories = async () => {
@@ -45,6 +50,8 @@ const Home = () => {
         }
       } catch (error) {
         console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
       }
     };
 
