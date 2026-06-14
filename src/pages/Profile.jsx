@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
-import { ref, query, orderByChild, equalTo, get } from "firebase/database";
+import { ref, get, query, orderByChild, equalTo } from "firebase/database";
 
 const Profile = () => {
   const { currentUser, logout } = useAuth();
@@ -12,6 +12,35 @@ const Profile = () => {
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(null);
+
+  const handleReviewClick = async (item) => {
+    if (item.id) {
+      navigate(`/product/${item.id}`);
+      return;
+    }
+
+    // Fallback if item.id is missing (old orders)
+    try {
+      const productsRef = ref(db, 'products');
+      const productQuery = query(productsRef, orderByChild('title'), equalTo(item.title));
+      const snapshot = await get(productQuery);
+
+      if (snapshot.exists()) {
+        const productsData = snapshot.val();
+        const foundId = Object.keys(productsData)[0]; // Since title should be unique enough, pick the first match
+        if (foundId) {
+          navigate(`/product/${foundId}`);
+        } else {
+          alert('Product not found.');
+        }
+      } else {
+        alert('Product not found.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error finding product.');
+    }
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -196,7 +225,7 @@ const Profile = () => {
                                      <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                                      {selectedStatus === 'toReview' && (
                                        <button
-                                         onClick={() => navigate(`/product/${item.id}`)}
+                                         onClick={() => handleReviewClick(item)}
                                          className="text-[10px] uppercase tracking-widest text-gold-600 hover:text-gold-700 border border-gold-600 px-2 py-0.5 rounded-sm"
                                        >
                                          Leave a review
