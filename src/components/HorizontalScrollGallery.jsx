@@ -47,9 +47,9 @@ const HorizontalScrollGallery = ({ products, categories, title, subtitle, banner
 
             {bannerImage && (
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
-          <Link to={bannerLink} className="block relative w-full h-48 sm:h-64 md:h-80 lg:h-96 rounded-lg overflow-hidden group">
+          <Link to={bannerLink} className="block relative w-full h-64 sm:h-80 md:h-96 lg:h-[32rem] rounded-lg overflow-hidden group">
              <img src={bannerImage} alt={bannerText} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-             <div className="absolute inset-0 bg-black/40 transition-opacity duration-300 group-hover:bg-black/50 flex flex-col items-center justify-center p-6 text-center">
+             <div className="absolute inset-0 bg-black/30 transition-opacity duration-300 group-hover:bg-black/20 flex flex-col items-center justify-center p-6 text-center">
                  {subtitle && (
                     <span className="text-gold-400 uppercase tracking-widest text-sm md:text-base font-medium mb-2 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
                       {subtitle}
