@@ -9,7 +9,7 @@ const BottomNav = () => {
   };
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 z-50">
+    <div className="md:hidden fixed bottom-0 left-0 w-full bg-white/70 backdrop-blur-xl border-t border-white/50 shadow-[0_-4px_30px_rgba(0,0,0,0.1)] z-50">
       <div className="flex justify-around items-center h-16">
         <Link to="/" className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${isActive("/")}`}>
           <Home size={24} />
