@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import { db } from "../firebase";
-import { ref, get } from "firebase/database";
+import { ref, get, query, orderByChild, equalTo } from "firebase/database";
 import { Package, Truck, Calendar, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -11,6 +11,35 @@ const OrderHistory = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const handleReviewClick = async (item) => {
+    if (item.id) {
+      navigate(`/product/${item.id}`);
+      return;
+    }
+
+    // Fallback if item.id is missing (old orders)
+    try {
+      const productsRef = ref(db, 'products');
+      const productQuery = query(productsRef, orderByChild('title'), equalTo(item.title));
+      const snapshot = await get(productQuery);
+
+      if (snapshot.exists()) {
+        const productsData = snapshot.val();
+        const foundId = Object.keys(productsData)[0]; // Since title should be unique enough, pick the first match
+        if (foundId) {
+          navigate(`/product/${foundId}`);
+        } else {
+          alert('Product not found.');
+        }
+      } else {
+        alert('Product not found.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error finding product.');
+    }
+  };
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -120,7 +149,17 @@ const OrderHistory = () => {
                           )}
                           <div className="flex justify-between items-center mt-2">
                             <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-                            <p className="text-sm font-medium text-gray-900">Rs. {(item.price * item.quantity).toFixed(2)}</p>
+                            <div className="flex items-center gap-3">
+                              {order.status === 'Delivered' && (
+                                <button
+                                  onClick={() => handleReviewClick(item)}
+                                  className="text-[10px] uppercase tracking-widest text-gold-600 hover:text-gold-700 border border-gold-600 px-2 py-0.5 rounded-sm"
+                                >
+                                  Leave a review
+                                </button>
+                              )}
+                              <p className="text-sm font-medium text-gray-900">Rs. {(item.price * item.quantity).toFixed(2)}</p>
+                            </div>
                           </div>
                         </div>
                       </div>

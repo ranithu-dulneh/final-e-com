@@ -52,7 +52,7 @@ const ProductDetails = () => {
         const snapshot = await get(ref(db, `products/${id}`));
         if (snapshot.exists()) {
           const data = snapshot.val();
-          setProduct(data);
+          setProduct({ id, ...data });
 
           // Parse images: handle if it's already an array or a comma-separated string
           let imgList = [];
@@ -173,7 +173,8 @@ const ProductDetails = () => {
           if (snapshot.exists()) {
             const ordersData = snapshot.val();
             const purchased = Object.values(ordersData).some(order =>
-               order.items && order.items.some(item => item.id === product.id || item.id === id)
+               order.status === 'Delivered' &&
+               order.items && order.items.some(item => item.id === product.id || item.id === id || item.title === product.title)
             );
             setHasPurchased(purchased);
           }
