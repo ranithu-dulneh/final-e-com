@@ -46,6 +46,8 @@ const ProductDetails = () => {
   const [reviewImages, setReviewImages] = useState([]);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewName, setReviewName] = useState("");
+  const [visibleReviewsCount, setVisibleReviewsCount] = useState(4);
+  const [selectedReviewImage, setSelectedReviewImage] = useState(null);
 
   useEffect(() => {
     if (currentUser && currentUser.displayName) {
@@ -313,6 +315,17 @@ const ProductDetails = () => {
 
   return (
     <div className="min-h-screen bg-off-white flex flex-col">
+      {selectedReviewImage && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4" onClick={() => setSelectedReviewImage(null)}>
+          <button
+            className="absolute top-4 right-4 text-white hover:text-gray-300"
+            onClick={(e) => { e.stopPropagation(); setSelectedReviewImage(null); }}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+          <img src={selectedReviewImage} alt="Review Full" className="max-w-full max-h-full object-contain" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
       <Navbar />
 
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 w-full">
@@ -411,7 +424,10 @@ const ProductDetails = () => {
                    {/* List of reviews */}
                    {product.reviews && Object.values(product.reviews).length > 0 ? (
                        <div className="space-y-4">
-                           {Object.values(product.reviews).map((review, idx) => (
+                           {Object.values(product.reviews)
+                             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                             .slice(0, visibleReviewsCount)
+                             .map((review, idx) => (
                                <div key={idx} className="border-b border-gray-100 pb-4">
                                    <div className="flex items-center gap-2 mb-1">
                                        <div className="flex">
@@ -426,12 +442,28 @@ const ProductDetails = () => {
                                    {review.images && review.images.length > 0 && (
                                        <div className="flex gap-2 mt-3 overflow-x-auto">
                                            {review.images.map((imgUrl, imgIdx) => (
-                                               <img key={imgIdx} src={imgUrl} alt="Review" className="w-20 h-20 object-cover border border-gray-200" />
+                                               <img
+                                                 key={imgIdx}
+                                                 src={imgUrl}
+                                                 alt="Review"
+                                                 className="w-20 h-20 object-cover border border-gray-200 cursor-pointer hover:opacity-90"
+                                                 onClick={() => setSelectedReviewImage(imgUrl)}
+                                               />
                                            ))}
                                        </div>
                                    )}
                                </div>
                            ))}
+                           {Object.values(product.reviews).length > visibleReviewsCount && (
+                               <div className="text-center pt-2">
+                                   <button
+                                     onClick={() => setVisibleReviewsCount(Object.values(product.reviews).length)}
+                                     className="text-sm font-medium text-gray-700 underline hover:text-black transition-colors"
+                                   >
+                                       View all {Object.values(product.reviews).length} reviews
+                                   </button>
+                               </div>
+                           )}
                        </div>
                    ) : (
                        <p className="text-sm text-gray-500">No reviews yet.</p>

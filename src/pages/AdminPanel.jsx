@@ -125,6 +125,7 @@ const AdminPanel = () => {
   // Manual Review State
   const [reviewProductId, setReviewProductId] = useState("");
   const [reviewName, setReviewName] = useState("");
+  const [reviewDate, setReviewDate] = useState(new Date().toISOString().split('T')[0]);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewImages, setReviewImages] = useState([]);
@@ -1911,13 +1912,14 @@ const AdminPanel = () => {
                         rating: Number(reviewRating),
                         comment: reviewComment,
                         images: imageUrls,
-                        createdAt: new Date().toISOString()
+                        createdAt: reviewDate ? new Date(reviewDate).toISOString() : new Date().toISOString()
                     };
                     await set(newReviewRef, newReview);
 
                     alert("Review added successfully!");
                     setReviewProductId("");
                     setReviewName("");
+                    setReviewDate(new Date().toISOString().split('T')[0]);
                     setReviewRating(5);
                     setReviewComment("");
                     setReviewImages([]);
@@ -1953,6 +1955,16 @@ const AdminPanel = () => {
                         required
                         value={reviewName}
                         onChange={(e) => setReviewName(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Review Date</label>
+                    <input
+                        type="date"
+                        required
+                        value={reviewDate}
+                        onChange={(e) => setReviewDate(e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                     />
                 </div>
