@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { ref, get, query, orderByChild, equalTo, push, set } from "firebase/database";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "../firebase";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
 import { ShoppingBag, CreditCard, ChevronLeft, ChevronRight, Truck, RefreshCw, ShieldCheck, Star } from "lucide-react";
@@ -41,6 +43,7 @@ const ProductDetails = () => {
   const [userHasReviewed, setUserHasReviewed] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
+  const [reviewImages, setReviewImages] = useState([]);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   useEffect(() => {
@@ -187,16 +190,34 @@ const ProductDetails = () => {
     }
   }, [currentUser, product, id]);
 
+  const handleReviewImageChange = (e) => {
+    if (e.target.files) {
+      setReviewImages(Array.from(e.target.files));
+    }
+  };
+
   const submitReview = async () => {
     if (!reviewRating || !currentUser) return;
     setIsSubmittingReview(true);
     try {
+        const imageUrls = [];
+        if (reviewImages.length > 0) {
+            for (let i = 0; i < reviewImages.length; i++) {
+                const file = reviewImages[i];
+                const imageRef = storageRef(storage, `reviews/${id}/${Date.now()}_${file.name}`);
+                const snapshot = await uploadBytes(imageRef, file);
+                const url = await getDownloadURL(snapshot.ref);
+                imageUrls.push(url);
+            }
+        }
+
         const newReviewRef = push(ref(db, `products/${id}/reviews`));
         const newReview = {
             userId: currentUser.uid,
             userName: currentUser.displayName || "Customer",
             rating: reviewRating,
             comment: reviewComment,
+            images: imageUrls,
             createdAt: new Date().toISOString()
         };
         await set(newReviewRef, newReview);
@@ -390,6 +411,13 @@ const ProductDetails = () => {
                                        <span className="text-xs text-gray-500 ml-auto">{new Date(review.createdAt).toLocaleDateString()}</span>
                                    </div>
                                    <p className="text-gray-600 text-sm mt-2">{review.comment}</p>
+                                   {review.images && review.images.length > 0 && (
+                                       <div className="flex gap-2 mt-3 overflow-x-auto">
+                                           {review.images.map((imgUrl, imgIdx) => (
+                                               <img key={imgIdx} src={imgUrl} alt="Review" className="w-20 h-20 object-cover border border-gray-200" />
+                                           ))}
+                                       </div>
+                                   )}
                                </div>
                            ))}
                        </div>
@@ -423,6 +451,21 @@ const ProductDetails = () => {
                                        value={reviewComment}
                                        onChange={(e) => setReviewComment(e.target.value)}
                                    ></textarea>
+                                   <div className="mb-4">
+                                       <label className="block text-sm text-gray-700 mb-1">Add Photos (optional)</label>
+                                       <input
+                                           type="file"
+                                           multiple
+                                           accept="image/*"
+                                           onChange={handleReviewImageChange}
+                                           className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                                       />
+                                       {reviewImages.length > 0 && (
+                                           <div className="mt-2 text-xs text-gray-500">
+                                               {reviewImages.length} image(s) selected
+                                           </div>
+                                       )}
+                                   </div>
                                    <button
                                        onClick={submitReview}
                                        disabled={isSubmittingReview || reviewRating === 0}
