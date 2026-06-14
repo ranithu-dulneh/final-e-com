@@ -21,6 +21,7 @@ import PopupAd from "./components/PopupAd";
 import Marquee from "./components/Marquee";
 import BottomNav from "./components/BottomNav";
 import Profile from "./pages/Profile";
+import OrderHistory from "./pages/OrderHistory";
 
 function App() {
   useTrackVisit();
@@ -46,6 +47,7 @@ function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/order-history" element={<OrderHistory />} />
               <Route
                 path="/admin"
                 element={

@@ -233,15 +233,46 @@ const Profile = () => {
           <h3 className="text-sm font-medium text-gray-900 uppercase tracking-widest mb-4">Recent Order</h3>
           {currentUser && !loadingOrders ? (
             orders.length > 0 ? (
-              <div className="p-4 bg-gray-50 border border-gray-100 flex justify-between items-center">
-                <div>
-                  <p className="text-sm font-medium">Order #{orders[0].id.slice(-6).toUpperCase()}</p>
-                  <p className="text-xs text-gray-500 mt-1">{new Date(orders[0].createdAt).toLocaleDateString()}</p>
+              <div className="space-y-4">
+                <div className="p-4 bg-gray-50 border border-gray-100">
+                  <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                    <p className="text-xs text-gray-500">{new Date(orders[0].createdAt).toLocaleDateString()}</p>
+                    <p className="text-xs uppercase tracking-wider font-medium bg-gray-200 inline-block px-2 py-1 rounded">{orders[0].status}</p>
+                  </div>
+
+                  {orders[0].items && orders[0].items.slice(0, 2).map((item, idx) => {
+                     let imageSrc = "https://placehold.co/80x80";
+                     if (Array.isArray(item.imageUrl) && item.imageUrl.length > 0) {
+                        imageSrc = item.imageUrl[0];
+                     } else if (typeof item.imageUrl === 'string' && item.imageUrl) {
+                        imageSrc = item.imageUrl.split(',')[0];
+                     }
+
+                     return (
+                       <div key={idx} className="flex gap-4 items-start mb-3 last:mb-0">
+                         <img src={imageSrc} alt="" className="w-12 h-12 object-cover bg-white border border-gray-200" />
+                         <div className="flex-1">
+                           <p className="text-sm font-medium text-gray-900 line-clamp-1">{item.title}</p>
+                           <p className="text-xs text-gray-500 mt-0.5">Qty: {item.quantity}</p>
+                         </div>
+                       </div>
+                     )
+                  })}
+                  {orders[0].items && orders[0].items.length > 2 && (
+                    <p className="text-xs text-gray-500 mt-2 italic">+ {orders[0].items.length - 2} more items</p>
+                  )}
+
+                  <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-900">Total</span>
+                    <span className="text-sm font-medium text-gold-600">Rs. {orders[0].totalAmount?.toLocaleString()}</span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gold-600">Rs. {orders[0].totalAmount?.toLocaleString()}</p>
-                  <p className="text-xs uppercase tracking-wider mt-1 font-medium bg-gray-200 inline-block px-2 py-1 rounded">{orders[0].status}</p>
-                </div>
+                <button
+                  onClick={() => navigate("/order-history")}
+                  className="w-full bg-black text-white py-3 text-xs uppercase tracking-widest hover:bg-gold-600 transition-colors"
+                >
+                  View All Orders
+                </button>
               </div>
             ) : (
               <div className="flex items-center justify-center h-24 bg-gray-50 border border-dashed border-gray-200">
@@ -255,48 +286,7 @@ const Profile = () => {
           )}
         </div>
 
-        {/* Feature: Full Order History */}
-        <div className="bg-white p-6 shadow-sm border border-gray-100 mb-8">
-          <h3 className="text-sm font-medium text-gray-900 uppercase tracking-widest mb-4">Order History</h3>
-          {currentUser && !loadingOrders ? (
-            orders.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                      <th className="py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {orders.map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="py-4 px-4 text-sm font-medium text-gray-900">#{order.id.slice(-6).toUpperCase()}</td>
-                        <td className="py-4 px-4 text-sm text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</td>
-                        <td className="py-4 px-4 text-sm">
-                          <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded uppercase tracking-wider">
-                            {order.status}
-                          </span>
-                        </td>
-                        <td className="py-4 px-4 text-sm font-medium text-gold-600 text-right">Rs. {order.totalAmount?.toLocaleString()}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-24 bg-gray-50 border border-dashed border-gray-200">
-                <span className="text-sm text-gray-500">No order history found.</span>
-              </div>
-            )
-          ) : (
-            <div className="flex items-center justify-center h-24 bg-gray-50 border border-dashed border-gray-200">
-              <span className="text-sm text-gray-500">{currentUser ? 'Loading...' : 'Sign in to view orders.'}</span>
-            </div>
-          )}
-        </div>
+
 
         {/* Feature: Wishlisted Items */}
         <div className="bg-white p-6 shadow-sm border border-gray-100 mb-8">
