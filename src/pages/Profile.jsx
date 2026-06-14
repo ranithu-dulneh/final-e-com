@@ -194,7 +194,7 @@ const Profile = () => {
                                    <p className="text-sm font-medium text-gray-900 line-clamp-1">{item.title}</p>
                                    <div className="flex justify-between items-center mt-0.5">
                                      <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
-                                     {selectedStatus === 'toReview' && (
+                                     {selectedStatus === 'toReview' && item.id && (
                                        <button
                                          onClick={() => navigate(`/product/${item.id}`)}
                                          className="text-[10px] uppercase tracking-widest text-gold-600 hover:text-gold-700 border border-gold-600 px-2 py-0.5 rounded-sm"
