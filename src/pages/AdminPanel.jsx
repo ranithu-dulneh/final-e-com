@@ -1369,8 +1369,8 @@ const AdminPanel = () => {
                                 {orders.filter(order => {
                                     const matchesSearch = orderSearchTerm === "" ||
                                         order.id.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
-                                        order.customer.phone1.includes(orderSearchTerm) ||
-                                        order.customer.name.toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
+                                        (order.customer?.phone1 || '').includes(orderSearchTerm) ||
+                                        (order.customer?.name || '').toLowerCase().includes(orderSearchTerm.toLowerCase()) ||
                                         (order.trackingInfo && order.trackingInfo.toLowerCase().includes(orderSearchTerm.toLowerCase()));
                                     const matchesStatus = orderStatusFilter === "All" || order.status === orderStatusFilter;
                                     return matchesSearch && matchesStatus;
@@ -1384,13 +1384,13 @@ const AdminPanel = () => {
                                                 {new Date(order.createdAt).toLocaleDateString()}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {order.customer.name}
+                                                {order.customer?.name || 'N/A'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {order.customer.city}
+                                                {order.customer?.city || 'N/A'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {order.customer.phone1}
+                                                {order.customer?.phone1 || 'N/A'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 text-xs font-bold rounded-full uppercase tracking-wider ${
@@ -1440,22 +1440,22 @@ const AdminPanel = () => {
                                 <div>
                                     <h4 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-3 border-b pb-2">Customer Details</h4>
                                     <div className="text-sm text-gray-800 space-y-2">
-                                        <p><span className="font-medium">Name:</span> {selectedOrder.customer.name}</p>
-                                        <p><span className="font-medium">Email:</span> {selectedOrder.customer.email || 'N/A'}</p>
+                                        <p><span className="font-medium">Name:</span> {selectedOrder.customer?.name || 'N/A'}</p>
+                                        <p><span className="font-medium">Email:</span> {selectedOrder.customer?.email || 'N/A'}</p>
                                         <p><span className="font-medium">Phone (WA):</span>
                                             <a
-                                            href={`https://wa.me/${formatPhoneNumber(selectedOrder.customer.phone1)}?text=${encodeURIComponent(
-                                                `Hello ${selectedOrder.customer.name}, regarding your order #${selectedOrder.id.slice(-6)} on ZAFIRA.`
+                                            href={`https://wa.me/${formatPhoneNumber(selectedOrder.customer?.phone1 || '')}?text=${encodeURIComponent(
+                                                `Hello ${selectedOrder.customer?.name || 'Valued Customer'}, regarding your order #${selectedOrder.id.slice(-6)} on ZAFIRA.`
                                             )}`}
                                             target="_blank"
                                             rel="noreferrer"
                                             className="text-green-600 hover:underline ml-1"
                                             >
-                                            {selectedOrder.customer.phone1} (Chat)
+                                            {selectedOrder.customer?.phone1 || 'N/A'} (Chat)
                                             </a>
                                         </p>
-                                        {selectedOrder.customer.phone2 && <p><span className="font-medium">Phone 2:</span> {selectedOrder.customer.phone2}</p>}
-                                        <p><span className="font-medium">Address:</span> {selectedOrder.customer.address}, {selectedOrder.customer.city}</p>
+                                        {selectedOrder.customer?.phone2 && <p><span className="font-medium">Phone 2:</span> {selectedOrder.customer.phone2}</p>}
+                                        <p><span className="font-medium">Address:</span> {selectedOrder.customer?.address || 'N/A'}, {selectedOrder.customer?.city || 'N/A'}</p>
                                         <p><span className="font-medium">Payment:</span> {selectedOrder.paymentMethod.toUpperCase()}</p>
                                         <p><span className="font-medium">Date:</span> {new Date(selectedOrder.createdAt).toLocaleString()}</p>
 
