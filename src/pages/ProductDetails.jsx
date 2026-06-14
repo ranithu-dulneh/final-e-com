@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { db } from "../firebase";
-import { ref, get } from "firebase/database";
+import { ref, get, query, orderByChild, equalTo, push, set } from "firebase/database";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
-import { ShoppingBag, CreditCard, ChevronLeft, ChevronRight, Truck, RefreshCw, ShieldCheck } from "lucide-react";
+import { ShoppingBag, CreditCard, ChevronLeft, ChevronRight, Truck, RefreshCw, ShieldCheck, Star } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext";
 
 // Helper function to format dates
 const getEstimatedDeliveryDate = (days) => {
@@ -25,6 +26,8 @@ const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { currentUser } = useAuth();
+
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -32,6 +35,14 @@ const ProductDetails = () => {
   const [selectedVariant, setSelectedVariant] = useState(null);
   const [variants, setVariants] = useState([]);
   const [recommendedProducts, setRecommendedProducts] = useState([]);
+
+  // Review state
+  const [activeTab, setActiveTab] = useState("description"); // "description" | "reviews"
+  const [hasPurchased, setHasPurchased] = useState(false);
+  const [userHasReviewed, setUserHasReviewed] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -114,6 +125,67 @@ const ProductDetails = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedVariant]);
+
+  // Check if user has purchased the item
+  useEffect(() => {
+    if (currentUser && product) {
+      const checkPurchase = async () => {
+        try {
+          const ordersRef = ref(db, 'orders');
+          const userOrdersQuery = query(ordersRef, orderByChild('userId'), equalTo(currentUser.uid));
+          const snapshot = await get(userOrdersQuery);
+          if (snapshot.exists()) {
+            const ordersData = snapshot.val();
+            const purchased = Object.values(ordersData).some(order =>
+               order.items && order.items.some(item => item.id === product.id || item.id === id)
+            );
+            setHasPurchased(purchased);
+          }
+        } catch (error) {
+          console.error("Error checking user orders:", error);
+        }
+      };
+      checkPurchase();
+
+      if (product.reviews) {
+          const reviewed = Object.values(product.reviews).some(rev => rev.userId === currentUser.uid);
+          setUserHasReviewed(reviewed);
+      }
+    }
+  }, [currentUser, product, id]);
+
+  const submitReview = async () => {
+    if (!reviewRating || !currentUser) return;
+    setIsSubmittingReview(true);
+    try {
+        const newReviewRef = push(ref(db, `products/${id}/reviews`));
+        const newReview = {
+            userId: currentUser.uid,
+            userName: currentUser.displayName || "Customer",
+            rating: reviewRating,
+            comment: reviewComment,
+            createdAt: new Date().toISOString()
+        };
+        await set(newReviewRef, newReview);
+
+        // Update local product state
+        setProduct(prev => ({
+            ...prev,
+            reviews: {
+                ...(prev.reviews || {}),
+                [newReviewRef.key]: newReview
+            }
+        }));
+        setUserHasReviewed(true);
+        setReviewRating(0);
+        setReviewComment("");
+    } catch (error) {
+        console.error("Error submitting review:", error);
+        alert("Failed to submit review. Please try again.");
+    } finally {
+        setIsSubmittingReview(false);
+    }
+  };
 
   const handleAddToCart = () => {
     if (variants.length > 0 && !selectedVariant) {
@@ -259,9 +331,97 @@ const ProductDetails = () => {
               </button>
             </div>
 
-            <div className="prose prose-sm text-gray-600">
-              <h3 className="text-gray-900 font-serif text-lg mb-2">Description</h3>
-              <p className="whitespace-pre-line">{product.description}</p>
+            <div className="mt-8 border-t border-gray-100 pt-8">
+              <div className="flex gap-8 border-b border-gray-200 mb-6">
+                <button
+                  onClick={() => setActiveTab("description")}
+                  className={`pb-2 text-lg font-serif transition-colors ${activeTab === "description" ? "text-gray-900 border-b-2 border-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                  Description
+                </button>
+                <button
+                  onClick={() => setActiveTab("reviews")}
+                  className={`pb-2 text-lg font-serif transition-colors ${activeTab === "reviews" ? "text-gray-900 border-b-2 border-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+                >
+                  Customer Reviews {product.reviews ? `(${Object.keys(product.reviews).length})` : "(0)"}
+                </button>
+              </div>
+
+              {activeTab === "description" && (
+                <div className="prose prose-sm text-gray-600 whitespace-pre-line">
+                  {product.description}
+                </div>
+              )}
+
+              {activeTab === "reviews" && (
+                <div className="space-y-6">
+                   {/* List of reviews */}
+                   {product.reviews && Object.values(product.reviews).length > 0 ? (
+                       <div className="space-y-4">
+                           {Object.values(product.reviews).map((review, idx) => (
+                               <div key={idx} className="border-b border-gray-100 pb-4">
+                                   <div className="flex items-center gap-2 mb-1">
+                                       <div className="flex">
+                                           {[1,2,3,4,5].map(star => (
+                                               <Star key={star} size={14} className={star <= review.rating ? "text-yellow-400 fill-current" : "text-gray-300"} />
+                                           ))}
+                                       </div>
+                                       <span className="font-medium text-sm text-gray-900">{review.userName || "Customer"}</span>
+                                       <span className="text-xs text-gray-500 ml-auto">{new Date(review.createdAt).toLocaleDateString()}</span>
+                                   </div>
+                                   <p className="text-gray-600 text-sm mt-2">{review.comment}</p>
+                               </div>
+                           ))}
+                       </div>
+                   ) : (
+                       <p className="text-sm text-gray-500">No reviews yet.</p>
+                   )}
+
+                   {/* Review Form */}
+                   {currentUser ? (
+                       hasPurchased ? (
+                           !userHasReviewed ? (
+                               <div className="mt-8 bg-gray-50 p-6 rounded-sm">
+                                   <h4 className="font-serif text-lg text-gray-900 mb-4">Write a Review</h4>
+                                   <div className="flex items-center gap-2 mb-4">
+                                       <span className="text-sm text-gray-700">Your Rating:</span>
+                                       <div className="flex cursor-pointer">
+                                           {[1,2,3,4,5].map(star => (
+                                               <Star
+                                                   key={star}
+                                                   size={20}
+                                                   onClick={() => setReviewRating(star)}
+                                                   className={star <= reviewRating ? "text-yellow-400 fill-current" : "text-gray-300 hover:text-yellow-200"}
+                                               />
+                                           ))}
+                                       </div>
+                                   </div>
+                                   <textarea
+                                       className="w-full border border-gray-200 p-3 rounded-sm text-sm focus:outline-none focus:border-gray-500 mb-4 bg-white"
+                                       rows="3"
+                                       placeholder="Share your thoughts about this product..."
+                                       value={reviewComment}
+                                       onChange={(e) => setReviewComment(e.target.value)}
+                                   ></textarea>
+                                   <button
+                                       onClick={submitReview}
+                                       disabled={isSubmittingReview || reviewRating === 0}
+                                       className="bg-black text-white px-6 py-2 text-sm uppercase tracking-widest hover:bg-gray-800 disabled:opacity-50"
+                                   >
+                                       {isSubmittingReview ? "Submitting..." : "Submit Review"}
+                                   </button>
+                               </div>
+                           ) : (
+                               <div className="mt-6 bg-gray-50 p-4 text-sm text-gray-600 rounded-sm">You have already reviewed this product.</div>
+                           )
+                       ) : (
+                           <div className="mt-6 bg-gray-50 p-4 text-sm text-gray-600 rounded-sm">You can leave a review after purchasing this product.</div>
+                       )
+                   ) : (
+                       <div className="mt-6 bg-gray-50 p-4 text-sm text-gray-600 rounded-sm">Please <Link to="/profile" className="text-gold-600 underline">sign in</Link> to leave a review.</div>
+                   )}
+                </div>
+              )}
             </div>
 
             {/* Variants Selection */}
