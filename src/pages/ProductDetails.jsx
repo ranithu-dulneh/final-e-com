@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { db } from "../firebase";
-import { ref, get, query, orderByChild, equalTo, push, set } from "firebase/database";
+import { ref, get, push, set } from "firebase/database";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../firebase";
 import Navbar from "../components/Navbar";
@@ -168,14 +168,18 @@ const ProductDetails = () => {
       const checkPurchase = async () => {
         try {
           const ordersRef = ref(db, 'orders');
-          const userOrdersQuery = query(ordersRef, orderByChild('userId'), equalTo(currentUser.uid));
-          const snapshot = await get(userOrdersQuery);
+          // Fetch all orders and filter client-side to capture orders missing userId but having matching email
+          const snapshot = await get(ordersRef);
           if (snapshot.exists()) {
             const ordersData = snapshot.val();
-            const purchased = Object.values(ordersData).some(order =>
-               order.status === 'Delivered' &&
-               order.items && order.items.some(item => item.id === product.id || item.id === id || item.title === product.title)
-            );
+            const purchased = Object.values(ordersData).some(order => {
+               const isUserOrder = order.userId === currentUser.uid || (currentUser.email && order.customer && order.customer.email === currentUser.email);
+               if (!isUserOrder) return false;
+
+               return order.status === 'Delivered' &&
+                      order.items &&
+                      order.items.some(item => item.id === product.id || item.id === id || item.title === product.title);
+            });
             setHasPurchased(purchased);
           }
         } catch (error) {
