@@ -192,13 +192,33 @@ const Profile = () => {
                                  <img src={imageSrc} alt="" className="w-12 h-12 object-cover bg-white border border-gray-200" />
                                  <div className="flex-1">
                                    <p className="text-sm font-medium text-gray-900 line-clamp-1">{item.title}</p>
-                                   <p className="text-xs text-gray-500 mt-0.5">Qty: {item.quantity}</p>
+                                   <div className="flex justify-between items-center mt-0.5">
+                                     <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                                     {selectedStatus === 'toReview' && (
+                                       <button
+                                         onClick={() => navigate(`/product/${item.id}`)}
+                                         className="text-[10px] uppercase tracking-widest text-gold-600 hover:text-gold-700 border border-gold-600 px-2 py-0.5 rounded-sm"
+                                       >
+                                         Leave a review
+                                       </button>
+                                     )}
+                                   </div>
                                  </div>
                                </div>
                              )
                           })}
                           {order.items && order.items.length > 2 && (
-                            <p className="text-xs text-gray-500 mt-2 italic">+ {order.items.length - 2} more items</p>
+                            <div className="flex justify-between items-center mt-2">
+                              <p className="text-xs text-gray-500 italic">+ {order.items.length - 2} more items</p>
+                              {selectedStatus === 'toReview' && (
+                                <button
+                                  onClick={() => navigate(`/order-history`)}
+                                  className="text-[10px] uppercase tracking-widest text-gray-500 hover:text-gray-700 underline"
+                                >
+                                  View all to review
+                                </button>
+                              )}
+                            </div>
                           )}
 
                           <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center">

@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
 import { ref, push, set, get, remove, update } from "firebase/database";
-import { Trash2, Edit2, Eye, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle, UploadCloud } from "lucide-react";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "../firebase";
+import { Trash2, Edit2, Eye, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle, UploadCloud, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const STATUSES = [
@@ -119,6 +121,14 @@ const AdminPanel = () => {
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // Manual Review State
+  const [reviewProductId, setReviewProductId] = useState("");
+  const [reviewName, setReviewName] = useState("");
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewImages, setReviewImages] = useState([]);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
   // Orders State
   const [orders, setOrders] = useState([]);
@@ -299,6 +309,8 @@ const AdminPanel = () => {
       fetchCategories();
     } else if (activeTab === 'add-product') {
       fetchCategories();
+    } else if (activeTab === 'reviews') {
+      fetchProducts();
     }
   }, [activeTab]);
 
@@ -811,6 +823,12 @@ const AdminPanel = () => {
                     className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'home-settings' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
                 >
                     <Settings size={16} /> Home Page Settings
+                </button>
+                <button
+                    onClick={() => setActiveTab('reviews')}
+                    className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'reviews' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <Star size={16} /> Reviews
                 </button>
             </nav>
         </div>
@@ -1872,6 +1890,132 @@ const AdminPanel = () => {
                      </div>
                  </div>
              </div>
+        </div>
+      ) : activeTab === 'reviews' ? (
+        // Manual Reviews View
+        <div className="bg-white p-6 shadow-sm border border-gray-100 max-w-2xl mx-auto">
+            <h2 className="text-xl font-serif mb-6 border-b pb-2">Add Manual Review</h2>
+            <form onSubmit={async (e) => {
+                e.preventDefault();
+                if (!reviewProductId || !reviewName || !reviewRating) {
+                    alert("Please fill all mandatory fields.");
+                    return;
+                }
+                setIsSubmittingReview(true);
+                try {
+                    const imageUrls = [];
+                    if (reviewImages.length > 0) {
+                        for (let i = 0; i < reviewImages.length; i++) {
+                            const file = reviewImages[i];
+                            const imageRef = storageRef(storage, `reviews/${reviewProductId}/${Date.now()}_${file.name}`);
+                            const snapshot = await uploadBytes(imageRef, file);
+                            const url = await getDownloadURL(snapshot.ref);
+                            imageUrls.push(url);
+                        }
+                    }
+
+                    const newReviewRef = push(ref(db, `products/${reviewProductId}/reviews`));
+                    const newReview = {
+                        userId: "admin_added_" + Date.now(),
+                        userName: reviewName,
+                        rating: Number(reviewRating),
+                        comment: reviewComment,
+                        images: imageUrls,
+                        createdAt: new Date().toISOString()
+                    };
+                    await set(newReviewRef, newReview);
+
+                    alert("Review added successfully!");
+                    setReviewProductId("");
+                    setReviewName("");
+                    setReviewRating(5);
+                    setReviewComment("");
+                    setReviewImages([]);
+                    // Reset file input by finding it and setting its value to null or empty
+                    const fileInput = document.getElementById("reviewImageInput");
+                    if(fileInput) fileInput.value = "";
+
+                } catch (error) {
+                    console.error("Error adding review:", error);
+                    alert("Failed to add review.");
+                } finally {
+                    setIsSubmittingReview(false);
+                }
+            }} className="space-y-4">
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Select Product</label>
+                    <select
+                        required
+                        value={reviewProductId}
+                        onChange={(e) => setReviewProductId(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                    >
+                        <option value="">-- Select Product --</option>
+                        {products.map(p => (
+                            <option key={p.id} value={p.id}>{p.title}</option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Reviewer Name</label>
+                    <input
+                        type="text"
+                        required
+                        value={reviewName}
+                        onChange={(e) => setReviewName(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                    <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                                key={star}
+                                size={24}
+                                onClick={() => setReviewRating(star)}
+                                className={`cursor-pointer ${star <= reviewRating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                            />
+                        ))}
+                    </div>
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Review Comment</label>
+                    <textarea
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                        rows="4"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Upload Photos</label>
+                    <input
+                        id="reviewImageInput"
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => {
+                            if (e.target.files) {
+                                setReviewImages(Array.from(e.target.files));
+                            }
+                        }}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                    />
+                     {reviewImages.length > 0 && (
+                        <div className="mt-2 text-xs text-gray-500">
+                            {reviewImages.length} image(s) selected
+                        </div>
+                    )}
+                </div>
+                <button
+                    type="submit"
+                    disabled={isSubmittingReview}
+                    className="w-full bg-black text-white py-3 uppercase tracking-widest hover:bg-gold-600 transition-colors mt-4 disabled:opacity-50"
+                >
+                    {isSubmittingReview ? "Submitting..." : "Add Review"}
+                </button>
+            </form>
         </div>
       ) : activeTab === 'settings' ? (
         // Settings View
