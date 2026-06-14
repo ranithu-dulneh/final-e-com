@@ -52,7 +52,7 @@ const ProductDetails = () => {
         const snapshot = await get(ref(db, `products/${id}`));
         if (snapshot.exists()) {
           const data = snapshot.val();
-          setProduct(data);
+          setProduct({ id, ...data });
 
           // Parse images: handle if it's already an array or a comma-separated string
           let imgList = [];
@@ -235,7 +235,7 @@ const ProductDetails = () => {
         setReviewComment("");
     } catch (error) {
         console.error("Error submitting review:", error);
-        alert("Failed to submit review. Please try again.");
+        alert("Failed to submit review: " + error.message);
     } finally {
         setIsSubmittingReview(false);
     }
