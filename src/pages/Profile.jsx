@@ -252,6 +252,49 @@ const Profile = () => {
           )}
         </div>
 
+        {/* Feature: Full Order History */}
+        <div className="bg-white p-6 shadow-sm border border-gray-100 mb-8">
+          <h3 className="text-sm font-medium text-gray-900 uppercase tracking-widest mb-4">Order History</h3>
+          {currentUser && !loadingOrders ? (
+            orders.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                      <th className="py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="py-3 px-4 text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {orders.map((order) => (
+                      <tr key={order.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="py-4 px-4 text-sm font-medium text-gray-900">#{order.id.slice(-6).toUpperCase()}</td>
+                        <td className="py-4 px-4 text-sm text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</td>
+                        <td className="py-4 px-4 text-sm">
+                          <span className="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded uppercase tracking-wider">
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-sm font-medium text-gold-600 text-right">Rs. {order.totalAmount?.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-24 bg-gray-50 border border-dashed border-gray-200">
+                <span className="text-sm text-gray-500">No order history found.</span>
+              </div>
+            )
+          ) : (
+            <div className="flex items-center justify-center h-24 bg-gray-50 border border-dashed border-gray-200">
+              <span className="text-sm text-gray-500">{currentUser ? 'Loading...' : 'Sign in to view orders.'}</span>
+            </div>
+          )}
+        </div>
+
         {/* Feature: Wishlisted Items */}
         <div className="bg-white p-6 shadow-sm border border-gray-100 mb-8">
           <h3 className="text-sm font-medium text-gray-900 uppercase tracking-widest mb-4">Wishlist</h3>
