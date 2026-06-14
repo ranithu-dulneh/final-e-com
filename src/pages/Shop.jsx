@@ -1,11 +1,13 @@
+import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+
 import Navbar from "../components/Navbar";
 import ProductGallery from "../components/ProductGallery";
 import { db } from "../firebase";
 import { ref, get } from "firebase/database";
 import { Search } from "lucide-react";
+import { useScrollRestoration } from "../hooks/useScrollRestoration";
 
 const Shop = () => {
   const location = useLocation();
@@ -22,6 +24,8 @@ const Shop = () => {
   const [subCategories, setSubCategories] = useState([]);
 
   const [loading, setLoading] = useState(true);
+
+  useScrollRestoration("shop", !loading);
 
   useEffect(() => {
     const fetchProducts = async () => {
