@@ -212,24 +212,14 @@ const AdminPanel = () => {
     if (!file) return;
 
     setFileUploading(true);
-    const formData = new FormData();
-    formData.append("file", file);
 
     try {
-      const response = await fetch("/api/uploadImage", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to upload image");
-      }
-
-      const data = await response.json();
+      const imageRef = storageRef(storage, `products/${Date.now()}_${file.name}`);
+      const snapshot = await uploadBytes(imageRef, file);
+      const url = await getDownloadURL(snapshot.ref);
 
       // Append the new URL to the existing ones
-      setImageUrlInput(prev => prev ? `${prev}, ${data.url}` : data.url);
+      setImageUrlInput(prev => prev ? `${prev}, ${url}` : url);
       alert("Image uploaded successfully and URL added!");
     } catch (error) {
       console.error("Upload error:", error);
