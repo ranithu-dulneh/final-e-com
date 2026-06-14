@@ -37,7 +37,6 @@ const ProductDetails = () => {
   const [recommendedProducts, setRecommendedProducts] = useState([]);
 
   // Review state
-  const [activeTab, setActiveTab] = useState("description"); // "description" | "reviews"
   const [hasPurchased, setHasPurchased] = useState(false);
   const [userHasReviewed, setUserHasReviewed] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
@@ -75,6 +74,8 @@ const ProductDetails = () => {
           } else {
              setVariants([]);
           }
+
+          fetchRecommendedProducts(data);
         } else {
           console.error("Product not found");
         }
@@ -85,20 +86,53 @@ const ProductDetails = () => {
       }
     };
 
-    const fetchRecommendedProducts = async () => {
+    const fetchRecommendedProducts = async (currentProduct) => {
       try {
-        const recommendedRef = ref(db, 'settings/recommendedProducts');
-        const recommendedSnapshot = await get(recommendedRef);
-        if (recommendedSnapshot.exists()) {
-          const productIds = recommendedSnapshot.val() || [];
-          const productsData = [];
-          for (const prodId of productIds) {
-            const prodSnapshot = await get(ref(db, `products/${prodId}`));
-            if (prodSnapshot.exists() && prodSnapshot.val().isVisible) {
-              productsData.push({ id: prodId, ...prodSnapshot.val() });
-            }
-          }
-          setRecommendedProducts(productsData);
+        const productsSnapshot = await get(ref(db, 'products'));
+        if (productsSnapshot.exists()) {
+          const allProductsData = productsSnapshot.val();
+          const allProducts = Object.keys(allProductsData).map(key => ({
+            id: key,
+            ...allProductsData[key]
+          })).filter(p => p.id !== id && p.isVisible !== false);
+
+          const currentTitleWords = currentProduct.title.toLowerCase().split(/\s+/);
+          const genericWords = ["necklace", "necklaces", "bracelet", "bracelets", "ring", "rings", "earring", "earrings", "watch", "watches", "pendant", "set", "gold", "silver", "diamond", "chain"];
+          const keyWords = currentTitleWords.filter(w => !genericWords.includes(w) && w.length > 2);
+
+          let scoredProducts = allProducts.map(p => {
+             let score = 0;
+             const pTitleLower = p.title.toLowerCase();
+
+             // 1. Check for shared key words in title
+             let sharedKeyWords = 0;
+             for (const word of keyWords) {
+                 if (pTitleLower.includes(word)) {
+                     sharedKeyWords++;
+                 }
+             }
+             score += (sharedKeyWords * 10); // high weight for same name/collection
+
+             // 2. Check for same category
+             if (p.category === currentProduct.category) {
+                 score += 5;
+             }
+
+             // 3. Same main category
+             if (p.mainCategory === currentProduct.mainCategory) {
+                 score += 2;
+             }
+
+             return { ...p, _score: score };
+          });
+
+          // Filter products that have at least some relevance (score > 0)
+          scoredProducts = scoredProducts.filter(p => p._score > 0);
+
+          // Sort by score descending, then randomly to mix things up a bit for ties
+          scoredProducts.sort((a, b) => b._score - a._score || Math.random() - 0.5);
+
+          setRecommendedProducts(scoredProducts.slice(0, 8));
         }
       } catch (error) {
         console.error("Error fetching recommended products:", error);
@@ -106,7 +140,6 @@ const ProductDetails = () => {
     };
 
     fetchProductData();
-    fetchRecommendedProducts();
   }, [id]);
 
   useEffect(() => {
@@ -331,29 +364,16 @@ const ProductDetails = () => {
               </button>
             </div>
 
-            <div className="mt-8 border-t border-gray-100 pt-8">
-              <div className="flex gap-8 border-b border-gray-200 mb-6">
-                <button
-                  onClick={() => setActiveTab("description")}
-                  className={`pb-2 text-lg font-serif transition-colors ${activeTab === "description" ? "text-gray-900 border-b-2 border-gray-900" : "text-gray-500 hover:text-gray-700"}`}
-                >
-                  Description
-                </button>
-                <button
-                  onClick={() => setActiveTab("reviews")}
-                  className={`pb-2 text-lg font-serif transition-colors ${activeTab === "reviews" ? "text-gray-900 border-b-2 border-gray-900" : "text-gray-500 hover:text-gray-700"}`}
-                >
-                  Customer Reviews {product.reviews ? `(${Object.keys(product.reviews).length})` : "(0)"}
-                </button>
-              </div>
-
-              {activeTab === "description" && (
+            <div className="mt-12 space-y-12">
+              <div className="border-t border-gray-100 pt-8">
+                <h3 className="text-xl font-serif text-gray-900 mb-6">Description</h3>
                 <div className="prose prose-sm text-gray-600 whitespace-pre-line">
                   {product.description}
                 </div>
-              )}
+              </div>
 
-              {activeTab === "reviews" && (
+              <div className="border-t border-gray-100 pt-8">
+                <h3 className="text-xl font-serif text-gray-900 mb-6">Customer Reviews {product.reviews ? `(${Object.keys(product.reviews).length})` : "(0)"}</h3>
                 <div className="space-y-6">
                    {/* List of reviews */}
                    {product.reviews && Object.values(product.reviews).length > 0 ? (
@@ -421,7 +441,7 @@ const ProductDetails = () => {
                        <div className="mt-6 bg-gray-50 p-4 text-sm text-gray-600 rounded-sm">Please <Link to="/profile" className="text-gold-600 underline">sign in</Link> to leave a review.</div>
                    )}
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Variants Selection */}
