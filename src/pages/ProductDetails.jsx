@@ -45,6 +45,13 @@ const ProductDetails = () => {
   const [reviewComment, setReviewComment] = useState("");
   const [reviewImages, setReviewImages] = useState([]);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewName, setReviewName] = useState("");
+
+  useEffect(() => {
+    if (currentUser && currentUser.displayName) {
+      setReviewName(currentUser.displayName);
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -219,7 +226,7 @@ const ProductDetails = () => {
         const newReviewRef = push(ref(db, `products/${id}/reviews`));
         const newReview = {
             userId: currentUser.uid,
-            userName: currentUser.displayName || "Customer",
+            userName: reviewName.trim() || "Customer",
             rating: reviewRating,
             comment: reviewComment,
             images: imageUrls,
@@ -436,6 +443,16 @@ const ProductDetails = () => {
                            !userHasReviewed ? (
                                <div className="mt-8 bg-gray-50 p-6 rounded-sm">
                                    <h4 className="font-serif text-lg text-gray-900 mb-4">Write a Review</h4>
+                                   <div className="mb-4">
+                                       <label className="block text-sm text-gray-700 mb-1">Your Name</label>
+                                       <input
+                                           type="text"
+                                           className="w-full border border-gray-200 p-2 rounded-sm text-sm focus:outline-none focus:border-gray-500 bg-white"
+                                           placeholder="Enter your name to be published"
+                                           value={reviewName}
+                                           onChange={(e) => setReviewName(e.target.value)}
+                                       />
+                                   </div>
                                    <div className="flex items-center gap-2 mb-4">
                                        <span className="text-sm text-gray-700">Your Rating:</span>
                                        <div className="flex cursor-pointer">
@@ -473,7 +490,7 @@ const ProductDetails = () => {
                                    </div>
                                    <button
                                        onClick={submitReview}
-                                       disabled={isSubmittingReview || reviewRating === 0}
+                                       disabled={isSubmittingReview || reviewRating === 0 || !reviewName.trim()}
                                        className="bg-black text-white px-6 py-2 text-sm uppercase tracking-widest hover:bg-gray-800 disabled:opacity-50"
                                    >
                                        {isSubmittingReview ? "Submitting..." : "Submit Review"}
