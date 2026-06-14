@@ -83,21 +83,34 @@ const HorizontalScrollGallery = ({ products, categories, title, subtitle, banner
         <div ref={scrollRef} className="flex overflow-x-auto snap-x snap-mandatory hide-scrollbar gap-6 px-4 sm:px-6 lg:px-8 pb-8">
 
           {hasCategories && categories.map((cat) => (
-            <div key={cat.id || cat.name} className="snap-start shrink-0 w-[160px] sm:w-[200px]">
-              <Link
-                to="/shop"
-                state={{ selectedMainCategory: cat.mainCategory || "Womens", selectedSecondaryCategory: cat.name }}
-                className="flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group h-full"
+            <div key={cat.id || cat.name} className="snap-start shrink-0 w-[270px] sm:w-[310px]">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-50px" }}
+                transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
+                className="h-full"
               >
-                {cat.imageUrl ? (
-                  <img src={cat.imageUrl} alt={cat.name} className="w-24 h-24 object-cover rounded-full mb-4 shadow-sm group-hover:scale-105 transition-transform duration-300" />
-                ) : (
-                  <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center shadow-sm mb-4">
-                    <span className="text-gray-400 text-xs uppercase tracking-widest">{cat.name.substring(0, 2)}</span>
+                <Link
+                  to="/shop"
+                  state={{ selectedMainCategory: cat.mainCategory || "Womens", selectedSecondaryCategory: cat.name }}
+                  className="block h-full"
+                >
+                  <div className="group relative flex flex-col items-center bg-white p-2 sm:p-4 rounded-lg transition-all duration-300 hover:shadow-xl h-full">
+                    <div className="relative w-full aspect-[4/5] bg-gray-100 overflow-hidden mb-4 rounded-md">
+                      {cat.imageUrl ? (
+                        <img src={cat.imageUrl} alt={cat.name} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                      ) : (
+                        <div className="absolute inset-0 w-full h-full bg-white flex items-center justify-center">
+                          <span className="text-gray-400 text-xs uppercase tracking-widest">{cat.name.substring(0, 2)}</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/10 transition-opacity duration-300 pointer-events-none opacity-0 group-hover:opacity-100" />
+                    </div>
+                    <span className="font-serif text-sm sm:text-lg text-gray-900 text-center">{cat.name}</span>
                   </div>
-                )}
-                <span className="font-serif text-lg text-gray-900 text-center">{cat.name}</span>
-              </Link>
+                </Link>
+              </motion.div>
             </div>
           ))}
 
