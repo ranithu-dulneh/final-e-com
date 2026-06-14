@@ -173,14 +173,37 @@ const Profile = () => {
                         if (selectedStatus === 'toReview') return o.status === 'Delivered';
                         return false;
                       }).map(order => (
-                        <div key={order.id} className="text-sm p-4 border border-gray-100 flex justify-between items-center bg-gray-50">
-                          <div>
-                            <p className="font-medium">Order #{order.id.slice(-6).toUpperCase()}</p>
-                            <p className="text-gray-500 text-xs mt-1">{new Date(order.createdAt).toLocaleDateString()}</p>
+                        <div key={order.id} className="p-4 bg-gray-50 border border-gray-100">
+                          <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
+                            <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</p>
+                            <p className="text-xs uppercase tracking-wider font-medium bg-gray-200 text-gray-700 inline-block px-2 py-1 rounded">{order.status}</p>
                           </div>
-                          <div className="text-right">
-                            <p className="font-medium text-gold-600">Rs. {order.totalAmount?.toLocaleString()}</p>
-                            <p className="text-xs text-gray-500 uppercase tracking-wider mt-1">{order.status}</p>
+
+                          {order.items && order.items.slice(0, 2).map((item, idx) => {
+                             let imageSrc = "https://placehold.co/80x80";
+                             if (Array.isArray(item.imageUrl) && item.imageUrl.length > 0) {
+                                imageSrc = item.imageUrl[0];
+                             } else if (typeof item.imageUrl === 'string' && item.imageUrl) {
+                                imageSrc = item.imageUrl.split(',')[0];
+                             }
+
+                             return (
+                               <div key={idx} className="flex gap-4 items-start mb-3 last:mb-0">
+                                 <img src={imageSrc} alt="" className="w-12 h-12 object-cover bg-white border border-gray-200" />
+                                 <div className="flex-1">
+                                   <p className="text-sm font-medium text-gray-900 line-clamp-1">{item.title}</p>
+                                   <p className="text-xs text-gray-500 mt-0.5">Qty: {item.quantity}</p>
+                                 </div>
+                               </div>
+                             )
+                          })}
+                          {order.items && order.items.length > 2 && (
+                            <p className="text-xs text-gray-500 mt-2 italic">+ {order.items.length - 2} more items</p>
+                          )}
+
+                          <div className="mt-4 pt-3 border-t border-gray-200 flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-900">Total</span>
+                            <span className="text-sm font-medium text-gold-600">Rs. {order.totalAmount?.toLocaleString()}</span>
                           </div>
                         </div>
                       ))}
