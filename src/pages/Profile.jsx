@@ -19,15 +19,18 @@ const Profile = () => {
       setLoadingOrders(true);
       try {
         const ordersRef = ref(db, 'orders');
-        const userOrdersQuery = query(ordersRef, orderByChild('userId'), equalTo(currentUser.uid));
-        const snapshot = await get(userOrdersQuery);
+        // Fetch all orders and filter client-side to bypass potential Firebase index issues
+        const snapshot = await get(ordersRef);
 
         if (snapshot.exists()) {
           const ordersData = snapshot.val();
-          const ordersList = Object.keys(ordersData).map(key => ({
-            id: key,
-            ...ordersData[key]
-          })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+          const ordersList = Object.keys(ordersData)
+            .map(key => ({
+              id: key,
+              ...ordersData[key]
+            }))
+            .filter(order => order.userId === currentUser.uid || (currentUser.email && order.customer && order.customer.email === currentUser.email))
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
           setOrders(ordersList);
         } else {
