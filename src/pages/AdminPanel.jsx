@@ -2,9 +2,10 @@ import DashboardMetrics from "../components/admin/DashboardMetrics";
 import { BarChart2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { db } from "../firebase";
+import { db, storage } from "../firebase";
 import { ref, push, set, get, remove, update } from "firebase/database";
-import { Trash2, Edit2, Eye, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle, UploadCloud } from "lucide-react";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { Trash2, Edit2, Eye, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle, UploadCloud, Star, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const STATUSES = [
@@ -128,7 +129,16 @@ const AdminPanel = () => {
   const [orderStatusFilter, setOrderStatusFilter] = useState("All");
   const [selectedOrder, setSelectedOrder] = useState(null);
 
+
+  const [reviewProductId, setReviewProductId] = useState("");
+  const [reviewCustomerName, setReviewCustomerName] = useState("");
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewImage, setReviewImage] = useState(null);
+  const [isSubmittingAdminReview, setIsSubmittingAdminReview] = useState(false);
+
   // Form State
+
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [originalPrice, setOriginalPrice] = useState("");
@@ -315,7 +325,49 @@ const AdminPanel = () => {
     }
   }, [searchTerm, products]);
 
+
+  const handleAdminReviewSubmit = async (e) => {
+    e.preventDefault();
+    if (!reviewProductId || !reviewCustomerName || !reviewComment) {
+        alert("Please fill all required fields.");
+        return;
+    }
+    setIsSubmittingAdminReview(true);
+    try {
+        let imageUrl = null;
+        if (reviewImage) {
+            const imageRef = storageRef(storage, `reviews/${reviewProductId}/${Date.now()}_${reviewImage.name}`);
+            await uploadBytes(imageRef, reviewImage);
+            imageUrl = await getDownloadURL(imageRef);
+        }
+
+        const newReviewRef = push(ref(db, `products/${reviewProductId}/reviews`));
+        const newReview = {
+            userId: "admin_manual_entry",
+            userName: reviewCustomerName,
+            rating: reviewRating,
+            comment: reviewComment,
+            imageUrl: imageUrl,
+            createdAt: new Date().toISOString()
+        };
+        await set(newReviewRef, newReview);
+
+        setReviewProductId("");
+        setReviewCustomerName("");
+        setReviewRating(5);
+        setReviewComment("");
+        setReviewImage(null);
+        alert("Review added successfully!");
+    } catch (error) {
+        console.error("Error adding review:", error);
+        alert("Failed to add review.");
+    } finally {
+        setIsSubmittingAdminReview(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
+
     e.preventDefault();
     if (!title || !price || !category || !estimatedShippingDate) {
         alert("Please fill all mandatory fields including Estimated Shipping Date.");
@@ -812,7 +864,15 @@ const AdminPanel = () => {
                 >
                     <Settings size={16} /> Home Page Settings
                 </button>
+
+                <button
+                    onClick={() => setActiveTab('reviews')}
+                    className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'reviews' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <MessageSquare size={16} /> Reviews
+                </button>
             </nav>
+
         </div>
         <button onClick={logout} className="flex items-center gap-2 hover:text-gold-500 transition-colors">
           <LogOut size={18} /> Logout
@@ -1873,7 +1933,91 @@ const AdminPanel = () => {
                  </div>
              </div>
         </div>
+
+      ) : activeTab === 'reviews' ? (
+          <div className="max-w-3xl mx-auto">
+            <div className="bg-white p-6 shadow-sm border border-gray-100">
+                <h2 className="text-xl font-serif mb-6 border-b pb-2">Manually Add Customer Review</h2>
+                <p className="text-sm text-gray-500 mb-6">Use this form to add reviews collected from WhatsApp or other channels directly to a product.</p>
+
+                <form onSubmit={handleAdminReviewSubmit} className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Select Product</label>
+                        <select
+                            required
+                            value={reviewProductId}
+                            onChange={(e) => setReviewProductId(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                        >
+                            <option value="">Select a product...</option>
+                            {products.map(p => (
+                                <option key={p.id} value={p.id}>{p.title}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                        <input
+                            type="text"
+                            required
+                            value={reviewCustomerName}
+                            onChange={(e) => setReviewCustomerName(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                            placeholder="e.g. Jane Doe"
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Rating</label>
+                        <div className="flex gap-1">
+                            {[1,2,3,4,5].map(star => (
+                                <Star
+                                    key={star}
+                                    size={24}
+                                    onClick={() => setReviewRating(star)}
+                                    className={`cursor-pointer ${star <= reviewRating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Review Text</label>
+                        <textarea
+                            required
+                            rows="4"
+                            value={reviewComment}
+                            onChange={(e) => setReviewComment(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                            placeholder="Enter the customer's review here..."
+                        ></textarea>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Review Image (Optional)</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setReviewImage(e.target.files[0])}
+                            className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100"
+                        />
+                    </div>
+
+                    <div className="pt-4">
+                        <button
+                            type="submit"
+                            disabled={isSubmittingAdminReview}
+                            className="w-full bg-black text-white px-6 py-3 uppercase tracking-widest text-sm hover:bg-gray-800 disabled:opacity-50"
+                        >
+                            {isSubmittingAdminReview ? "Adding Review..." : "Add Review"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+          </div>
       ) : activeTab === 'settings' ? (
+
         // Settings View
         <>
         <div className="bg-white p-6 shadow-sm border border-gray-100 max-w-2xl mx-auto">

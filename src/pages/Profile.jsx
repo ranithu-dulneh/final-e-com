@@ -170,15 +170,38 @@ const Profile = () => {
                         if (selectedStatus === 'toReview') return o.status === 'Delivered';
                         return false;
                       }).map(order => (
-                        <div key={order.id} className="text-sm p-4 border border-gray-100 flex justify-between items-center bg-gray-50">
-                          <div>
-                            <p className="font-medium">Order #{order.id.slice(-6).toUpperCase()}</p>
-                            <p className="text-gray-500 text-xs mt-1">{new Date(order.createdAt).toLocaleDateString()}</p>
+                        <div key={order.id} className="text-sm p-4 border border-gray-100 flex flex-col bg-gray-50">
+                          <div className="flex justify-between items-center w-full">
+                            <div>
+                              <p className="font-medium">Order #{order.id.slice(-6).toUpperCase()}</p>
+                              <p className="text-gray-500 text-xs mt-1">{new Date(order.createdAt).toLocaleDateString()}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium text-gold-600">Rs. {order.totalAmount?.toLocaleString()}</p>
+                              <p className="text-xs text-gray-500 uppercase tracking-wider mt-1">{order.status}</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-medium text-gold-600">Rs. {order.totalAmount?.toLocaleString()}</p>
-                            <p className="text-xs text-gray-500 uppercase tracking-wider mt-1">{order.status}</p>
-                          </div>
+                          {selectedStatus === 'toReview' && order.items && (
+                             <div className="mt-4 border-t border-gray-200 pt-3 space-y-3">
+                                <p className="text-xs text-gray-500 font-medium uppercase tracking-widest">Items to review:</p>
+                                {order.items.map((item, idx) => (
+                                    <div key={idx} className="flex justify-between items-center">
+                                        <div className="flex items-center gap-2">
+                                            {item.imageUrl && (
+                                                <img src={Array.isArray(item.imageUrl) ? item.imageUrl[0] : item.imageUrl} alt={item.title} className="w-8 h-8 object-cover rounded" />
+                                            )}
+                                            <span className="text-xs text-gray-700 truncate max-w-[150px] sm:max-w-[200px]">{item.title}</span>
+                                        </div>
+                                        <Link
+                                            to={`/product/${item.id}#reviews`}
+                                            className="text-[10px] bg-black text-white px-3 py-1.5 uppercase tracking-wider hover:bg-gray-800 transition-colors"
+                                        >
+                                            Leave Review
+                                        </Link>
+                                    </div>
+                                ))}
+                             </div>
+                          )}
                         </div>
                       ))}
                       {orders.filter(o => {

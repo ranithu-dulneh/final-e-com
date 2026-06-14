@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { ref, get, query, orderByChild, equalTo, push, set } from "firebase/database";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage } from "../firebase";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
-import { ShoppingBag, CreditCard, ChevronLeft, ChevronRight, Truck, RefreshCw, ShieldCheck, Star } from "lucide-react";
+import { ShoppingBag, CreditCard, ChevronLeft, ChevronRight, Truck, RefreshCw, ShieldCheck, Star, Upload, X } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -42,6 +44,8 @@ const ProductDetails = () => {
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewImage, setReviewImage] = useState(null);
+  const [reviewImagePreview, setReviewImagePreview] = useState(null);
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -169,10 +173,10 @@ const ProductDetails = () => {
           const snapshot = await get(userOrdersQuery);
           if (snapshot.exists()) {
             const ordersData = snapshot.val();
-            const purchased = Object.values(ordersData).some(order =>
-               order.items && order.items.some(item => item.id === product.id || item.id === id)
+            const purchasedAndDelivered = Object.values(ordersData).some(order =>
+               order.status === 'Delivered' && order.items && order.items.some(item => item.id === product.id || item.id === id)
             );
-            setHasPurchased(purchased);
+            setHasPurchased(purchasedAndDelivered);
           }
         } catch (error) {
           console.error("Error checking user orders:", error);
@@ -187,16 +191,37 @@ const ProductDetails = () => {
     }
   }, [currentUser, product, id]);
 
+  const handleReviewImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setReviewImage(file);
+      setReviewImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const removeReviewImage = () => {
+    setReviewImage(null);
+    setReviewImagePreview(null);
+  };
+
   const submitReview = async () => {
     if (!reviewRating || !currentUser) return;
     setIsSubmittingReview(true);
     try {
+        let imageUrl = null;
+        if (reviewImage) {
+            const imageRef = storageRef(storage, `reviews/${id}/${Date.now()}_${reviewImage.name}`);
+            await uploadBytes(imageRef, reviewImage);
+            imageUrl = await getDownloadURL(imageRef);
+        }
+
         const newReviewRef = push(ref(db, `products/${id}/reviews`));
         const newReview = {
             userId: currentUser.uid,
             userName: currentUser.displayName || "Customer",
             rating: reviewRating,
             comment: reviewComment,
+            imageUrl: imageUrl,
             createdAt: new Date().toISOString()
         };
         await set(newReviewRef, newReview);
@@ -212,6 +237,7 @@ const ProductDetails = () => {
         setUserHasReviewed(true);
         setReviewRating(0);
         setReviewComment("");
+        removeReviewImage();
     } catch (error) {
         console.error("Error submitting review:", error);
         alert("Failed to submit review. Please try again.");
@@ -390,6 +416,9 @@ const ProductDetails = () => {
                                        <span className="text-xs text-gray-500 ml-auto">{new Date(review.createdAt).toLocaleDateString()}</span>
                                    </div>
                                    <p className="text-gray-600 text-sm mt-2">{review.comment}</p>
+                                   {review.imageUrl && (
+                                       <img src={review.imageUrl} alt="Review attachment" className="mt-3 w-24 h-24 object-cover rounded-sm border border-gray-200" />
+                                   )}
                                </div>
                            ))}
                        </div>
@@ -423,6 +452,24 @@ const ProductDetails = () => {
                                        value={reviewComment}
                                        onChange={(e) => setReviewComment(e.target.value)}
                                    ></textarea>
+
+                                   <div className="mb-4">
+                                       {!reviewImagePreview ? (
+                                           <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-gray-900">
+                                               <Upload size={16} />
+                                               <span>Add a photo (optional)</span>
+                                               <input type="file" accept="image/*" className="hidden" onChange={handleReviewImageChange} />
+                                           </label>
+                                       ) : (
+                                           <div className="relative inline-block">
+                                               <img src={reviewImagePreview} alt="Preview" className="w-20 h-20 object-cover rounded-sm border border-gray-200" />
+                                               <button onClick={removeReviewImage} className="absolute -top-2 -right-2 bg-white text-gray-500 hover:text-red-500 rounded-full shadow-md p-0.5">
+                                                   <X size={14} />
+                                               </button>
+                                           </div>
+                                       )}
+                                   </div>
+
                                    <button
                                        onClick={submitReview}
                                        disabled={isSubmittingReview || reviewRating === 0}
