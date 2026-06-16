@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../firebase";
-import { ref, push, set } from "firebase/database";
+import { ref, push, set, get } from "firebase/database";
 import Navbar from "../components/Navbar";
 import { CreditCard, Truck, CheckCircle, AlertCircle, Building, Upload } from "lucide-react";
 
@@ -42,9 +42,88 @@ const Checkout = () => {
   const [couponMessage, setCouponMessage] = useState("");
   const [isCouponApplied, setIsCouponApplied] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [selectedCourier, setSelectedCourier] = useState("slp"); // "slp" or "trans" for bank/online
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState(0);
 
   // Allowed Payment logic
   const [availableMethods, setAvailableMethods] = useState({ cod: true, bank: true, online: true });
+
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        const snap = await get(ref(db, 'settings/offers'));
+        if (snap.exists()) {
+          setFreeShippingThreshold(Number(snap.val().freeShippingThreshold) || 0);
+        }
+      } catch (err) {
+        console.error("Error fetching offers", err);
+      }
+    };
+    fetchOffers();
+  }, []);
+
+  // Delivery charge calculations
+  const totalWeight = cartItems.reduce((acc, item) => acc + ((Number(item.weight) || 0) * item.quantity), 0);
+
+  const getSlpWeightCharge = (w) => {
+      if (w <= 250) return 200;
+      if (w <= 500) return 250;
+      if (w <= 1000) return 350;
+      if (w <= 2000) return 400;
+      if (w <= 3000) return 450;
+      if (w <= 4000) return 500;
+      if (w <= 5000) return 550;
+      if (w <= 6000) return 600;
+      if (w <= 7000) return 650;
+      if (w <= 8000) return 700;
+      if (w <= 9000) return 750;
+      if (w <= 10000) return 800;
+      if (w <= 15000) return 850;
+      if (w <= 20000) return 1100;
+      if (w <= 25000) return 1600;
+      if (w <= 30000) return 2100;
+      if (w <= 35000) return 2600;
+      return 3100;
+  };
+
+  const getSlpCodValueCharge = (value) => {
+      let fee = 0;
+      if (value <= 2000) {
+          fee = Math.ceil(value / 100) * 2;
+      } else if (value <= 10000) {
+          fee = Math.ceil((value - 2000) / 2000) * 10 + 40; // 40 is max of previous tier (2000/100*2)
+      } else if (value <= 50000) {
+          fee = Math.ceil((value - 10000) / 40000) * 50 + 40 + 40; // +40 (prev max 8000/2000*10=40)
+      } else if (value <= 100000) {
+          fee = Math.ceil((value - 50000) / 50000) * 100 + 40 + 40 + 50;
+      } else {
+          fee = 230; // Max fixed fallback if over 100k
+      }
+      return fee;
+  };
+
+  const getCalculatedDeliveryCharge = () => {
+    let charge = 0;
+    const isFree = freeShippingThreshold > 0 && total >= freeShippingThreshold;
+
+    if (paymentMethod === 'cod') {
+        const weightCharge = getSlpWeightCharge(totalWeight);
+        const valueCharge = getSlpCodValueCharge(total - appliedDiscount);
+        // Fixed handling fee for COD is 50
+        const fixedCodCharge = 50;
+
+        charge = (isFree ? 0 : weightCharge) + valueCharge + fixedCodCharge;
+    } else {
+        // Bank or Online
+        if (selectedCourier === 'slp') {
+            charge = isFree ? 0 : getSlpWeightCharge(totalWeight);
+        } else {
+            // Trans Express Fixed
+            charge = isFree ? 0 : 475;
+        }
+    }
+    return charge;
+  };
 
   useEffect(() => {
     if (cartItems.length > 0) {
@@ -129,15 +208,12 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      // Calculate per-product shipping based on method
-      const deliveryCharge = cartItems.reduce((acc, item) => {
-          const cost = paymentMethod === 'cod'
-            ? (Number(item.shippingCostCod) || 0)
-            : (Number(item.shippingCostBank) || 0);
-          return acc + (cost * item.quantity);
-      }, 0);
-
+      const deliveryCharge = getCalculatedDeliveryCharge();
       const finalTotal = total + deliveryCharge - appliedDiscount;
+
+      const courierName = paymentMethod === 'cod'
+        ? "SLP COD Courier"
+        : (selectedCourier === 'slp' ? "SLP Courier" : "Trans Express Courier");
 
       const orderData = {
         customer: formData,
@@ -149,6 +225,7 @@ const Checkout = () => {
         discount: appliedDiscount,
         couponCode: isCouponApplied ? enteredCoupon : "",
         paymentMethod: paymentMethod,
+        deliveryMethod: courierName,
         receiptUrl: "", // Receipt upload removed
         status: "Pending",
         createdAt: new Date().toISOString()
@@ -324,7 +401,7 @@ const Checkout = () => {
                                     <Truck size={18} /> Cash On Delivery
                                 </span>
                                 {paymentMethod === 'cod' && (
-                                    <p className="text-xs text-gray-500 mt-1">Shipping calculated per product (COD rates apply).</p>
+                                    <p className="text-xs text-gray-500 mt-1">Calculated based on SLP COD Rates + Rs. 50 Handling.</p>
                                 )}
                             </div>
                         </label>
@@ -345,11 +422,36 @@ const Checkout = () => {
                                     <span className="font-medium text-gray-900 flex items-center gap-2">
                                         <Building size={18} /> Bank Deposit
                                     </span>
-                                    {paymentMethod === 'bank' && (
-                                        <p className="text-xs text-gray-500 mt-1">Shipping calculated per product (Bank rates apply).</p>
-                                    )}
                                 </div>
                             </div>
+
+                            {paymentMethod === 'bank' && (
+                                <div className="mt-4 ml-7 space-y-2">
+                                    <p className="text-sm font-medium text-gray-700">Select Courier Service:</p>
+                                    <label className="flex items-center gap-2 cursor-pointer text-sm">
+                                        <input
+                                            type="radio"
+                                            name="courier"
+                                            value="slp"
+                                            checked={selectedCourier === 'slp'}
+                                            onChange={() => setSelectedCourier('slp')}
+                                            className="text-gold-600 focus:ring-gold-500"
+                                        />
+                                        <span>SLP Courier (2-3 Working Days) - Calculated by weight</span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer text-sm">
+                                        <input
+                                            type="radio"
+                                            name="courier"
+                                            value="trans"
+                                            checked={selectedCourier === 'trans'}
+                                            onChange={() => setSelectedCourier('trans')}
+                                            className="text-gold-600 focus:ring-gold-500"
+                                        />
+                                        <span>Trans Express Courier (2-3 Working Days) - Fixed Rs. 475</span>
+                                    </label>
+                                </div>
+                            )}
 
                             {paymentMethod === 'bank' && (
                                 <div className="mt-4 ml-7 space-y-3">
@@ -422,10 +524,7 @@ const Checkout = () => {
                 disabled={loading}
                 className="w-full bg-black text-white py-4 uppercase tracking-widest hover:bg-gray-800 transition-colors disabled:opacity-50 mt-4"
               >
-                {loading ? 'Processing...' : `Place Order (Rs. ${(total + cartItems.reduce((acc, item) => {
-                    const cost = paymentMethod === 'cod' ? (Number(item.shippingCostCod) || 0) : (Number(item.shippingCostBank) || 0);
-                    return acc + (cost * item.quantity);
-                }, 0)).toFixed(2)})`}
+                {loading ? 'Processing...' : `Place Order (Rs. ${(total + getCalculatedDeliveryCharge() - appliedDiscount).toFixed(2)})`}
               </button>
             </form>
           </div>
@@ -504,10 +603,14 @@ const Checkout = () => {
                 </div>
                 <div className="flex justify-between text-sm text-gray-600">
                     <span>Shipping</span>
-                    <span>Rs. {cartItems.reduce((acc, item) => {
-                        const cost = paymentMethod === 'cod' ? (Number(item.shippingCostCod) || 0) : (Number(item.shippingCostBank) || 0);
-                        return acc + (cost * item.quantity);
-                    }, 0).toFixed(2)}</span>
+                    {freeShippingThreshold > 0 && total >= freeShippingThreshold ? (
+                        <div>
+                            <span className="line-through text-gray-400 mr-2">Rs. {(paymentMethod === 'cod' ? getSlpWeightCharge(totalWeight) + getSlpCodValueCharge(total - appliedDiscount) + 50 : (selectedCourier === 'slp' ? getSlpWeightCharge(totalWeight) : 475)).toFixed(2)}</span>
+                            <span className="text-green-600 font-medium">Free</span>
+                        </div>
+                    ) : (
+                        <span>Rs. {getCalculatedDeliveryCharge().toFixed(2)}</span>
+                    )}
                 </div>
                 {isCouponApplied && (
                     <div className="flex justify-between text-sm text-green-600">
@@ -517,10 +620,7 @@ const Checkout = () => {
                 )}
                 <div className="flex justify-between text-base font-bold text-gray-900 pt-2 border-t border-gray-200">
                     <span>Total</span>
-                    <span>Rs. {Math.max(0, (total + cartItems.reduce((acc, item) => {
-                        const cost = paymentMethod === 'cod' ? (Number(item.shippingCostCod) || 0) : (Number(item.shippingCostBank) || 0);
-                        return acc + (cost * item.quantity);
-                    }, 0) - appliedDiscount)).toFixed(2)}</span>
+                    <span>Rs. {Math.max(0, (total + getCalculatedDeliveryCharge() - appliedDiscount)).toFixed(2)}</span>
                 </div>
              </div>
           </div>
