@@ -79,7 +79,7 @@ zafira.vercel.app`;
 
 const AdminPanel = () => {
   const { logout } = useAuth();
-  const [activeTab, setActiveTab] = useState("dashboard"); // 'inventory', 'add-product', 'orders', 'settings', 'offers', 'categories', 'warranty'
+  const [activeTab, setActiveTab] = useState("dashboard"); // 'inventory', 'add-product', 'orders', 'settings', 'offers', 'categories'
 
   // Settings State
   const [codCharge, setCodCharge] = useState("");
@@ -233,70 +233,6 @@ const AdminPanel = () => {
     }
   };
 
-
-  const handleAcceptWarranty = async (claim) => {
-    if (!window.confirm("Are you sure you want to accept this warranty claim and generate a replacement order?")) return;
-    try {
-      await update(ref(db, `warrantyClaims/${claim.id}`), { status: 'Accepted' });
-
-      // Generate replacement order
-      let customerInfo = {
-        name: claim.name,
-        phone1: claim.mobile,
-        email: "warranty@replacement.local",
-        address: "Refer to original order",
-        city: "Refer to original order"
-      };
-
-      // Try to fetch original order details if it was an online order
-      if (claim.orderSource === 'online' && claim.orderId) {
-          const origOrderSnap = await get(ref(db, `orders/${claim.orderId}`));
-          if (origOrderSnap.exists()) {
-             const origOrder = origOrderSnap.val();
-             if (origOrder.customer) {
-                customerInfo = { ...origOrder.customer, name: claim.name, phone1: claim.mobile };
-             }
-          }
-      }
-
-      const newOrderRef = push(ref(db, 'orders'));
-      await set(newOrderRef, {
-        userId: claim.userId || null,
-        customer: customerInfo,
-        items: [{
-           id: "WARRANTY-REP",
-           title: `Warranty Replacement (Orig: ${claim.orderSource === 'online' ? claim.orderId : 'WhatsApp'})`,
-           price: 0,
-           quantity: 1,
-           imageUrl: claim.imageUrl
-        }],
-        totalAmount: 0,
-        status: 'Warranty Replacement Pending',
-        createdAt: new Date().toISOString()
-      });
-
-      alert("Claim accepted and replacement order generated.");
-
-      // Update local state
-      setWarrantyClaims(prev => prev.map(c => c.id === claim.id ? { ...c, status: 'Accepted' } : c));
-
-    } catch (err) {
-      console.error(err);
-      alert("Failed to accept claim.");
-    }
-  };
-
-  const handleRejectWarranty = async (claimId) => {
-    if (!window.confirm("Are you sure you want to reject this claim?")) return;
-    try {
-      await update(ref(db, `warrantyClaims/${claimId}`), { status: 'Rejected' });
-      setWarrantyClaims(prev => prev.map(c => c.id === claimId ? { ...c, status: 'Rejected' } : c));
-    } catch (err) {
-      console.error(err);
-      alert("Failed to reject claim.");
-    }
-  };
-
   const fetchProducts = async () => {
     setLoading(true);
     try {
@@ -317,21 +253,6 @@ const AdminPanel = () => {
       console.error("Error fetching products:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-
-  const fetchWarrantyClaims = async () => {
-    try {
-      const warrantySnap = await get(ref(db, 'warrantyClaims'));
-      if (warrantySnap.exists()) {
-        const wData = warrantySnap.val();
-        setWarrantyClaims(Object.keys(wData).map(k => ({ id: k, ...wData[k] })).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)));
-      } else {
-        setWarrantyClaims([]);
-      }
-    } catch (error) {
-      console.error("Error fetching warranty claims:", error);
     }
   };
 
@@ -380,8 +301,6 @@ const AdminPanel = () => {
       fetchCategories();
     } else if (activeTab === 'add-product') {
       fetchCategories();
-    } else if (activeTab === 'warranty') {
-      fetchWarrantyClaims();
     } else if (activeTab === 'reviews') {
       fetchProducts();
     }
@@ -900,14 +819,7 @@ const AdminPanel = () => {
                 >
                     <Settings size={16} /> Home Page Settings
                 </button>
-
-                  <button
-                    onClick={() => setActiveTab('warranty')}
-                    className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'warranty' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
-                  >
-                    Warranty Claims
-                  </button>
-                  <button
+                <button
                     onClick={() => setActiveTab('reviews')}
                     className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'reviews' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
                 >
@@ -1985,69 +1897,7 @@ const AdminPanel = () => {
                  </div>
              </div>
         </div>
-
-        ) : activeTab === 'warranty' ? (
-          <div>
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-serif text-gray-900">Warranty Claims</h2>
-            </div>
-            <div className="bg-white border border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm whitespace-nowrap">
-                  <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase tracking-widest text-[10px]">
-                    <tr>
-                      <th className="p-4">Date</th>
-                      <th className="p-4">Customer</th>
-                      <th className="p-4">Mobile</th>
-                      <th className="p-4">Source / Order</th>
-                      <th className="p-4">Cause</th>
-                      <th className="p-4">Image</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {warrantyClaims.length === 0 ? (
-                      <tr><td colSpan="8" className="p-4 text-center text-gray-500">No warranty claims found.</td></tr>
-                    ) : (
-                      warrantyClaims.map(claim => (
-                        <tr key={claim.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="p-4">{new Date(claim.createdAt).toLocaleDateString()}</td>
-                          <td className="p-4 font-medium text-gray-900">{claim.name}</td>
-                          <td className="p-4">{claim.mobile}</td>
-                          <td className="p-4">
-                            {claim.orderSource === 'online' ? (
-                                <span className="text-blue-600 underline text-xs">{claim.orderId?.slice(-6) || 'Online'}</span>
-                            ) : (
-                                <span className="text-gray-500 text-xs">WhatsApp</span>
-                            )}
-                          </td>
-                          <td className="p-4 max-w-[200px] truncate" title={claim.cause}>{claim.cause}</td>
-                          <td className="p-4">
-                             <a href={claim.imageUrl} target="_blank" rel="noopener noreferrer" className="text-gold-600 hover:text-gold-700 underline text-xs">View Image</a>
-                          </td>
-                          <td className="p-4">
-                            <span className={`px-2 py-1 text-[10px] uppercase tracking-wider rounded ${claim.status === 'Pending' ? 'bg-yellow-100 text-yellow-800' : claim.status === 'Accepted' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                               {claim.status}
-                            </span>
-                          </td>
-                          <td className="p-4">
-                            {claim.status === 'Pending' && (
-                              <div className="flex gap-2">
-                                <button onClick={() => handleAcceptWarranty(claim)} className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">Accept</button>
-                                <button onClick={() => handleRejectWarranty(claim.id)} className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">Reject</button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-) : activeTab === 'reviews' ? (
+      ) : activeTab === 'reviews' ? (
         // Manual Reviews View
         <div className="bg-white p-6 shadow-sm border border-gray-100 max-w-2xl mx-auto">
             <h2 className="text-xl font-serif mb-6 border-b pb-2">Add Manual Review</h2>
