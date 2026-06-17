@@ -45,7 +45,7 @@ const getWhatsAppMessage = (status, order, tracking) => {
     case "Order confirmed": {
       const items = order.items.map(i => i.title).join(', ');
       const time = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
-      const deliveryMethod = "Courier Service";
+      const deliveryMethod = order.deliveryMethod || "Courier Service";
       const paymentMethod = order.paymentMethod === 'cod' ? 'Cash On Delivery' : 'Bank Deposit';
 
       return `Hi ${name},
@@ -149,6 +149,7 @@ const AdminPanel = () => {
   const [isMensCollection, setIsMensCollection] = useState(false);
   const [shippingCostCod, setShippingCostCod] = useState("");
   const [shippingCostBank, setShippingCostBank] = useState("");
+  const [weight, setWeight] = useState("");
   const [estimatedShippingDate, setEstimatedShippingDate] = useState("");
   const [description, setDescription] = useState("");
   const [mainCategory, setMainCategory] = useState("Womens");
@@ -351,6 +352,7 @@ const AdminPanel = () => {
         isMensCollection,
         shippingCostCod: shippingCostCod || 0,
         shippingCostBank: shippingCostBank || 0,
+        weight: Number(weight) || 0,
         estimatedShippingDate,
         description,
         mainCategory,
@@ -604,6 +606,7 @@ const AdminPanel = () => {
     setIsMensCollection(false);
     setShippingCostCod("");
     setShippingCostBank("");
+    setWeight("");
     setEstimatedShippingDate("");
     setDescription("");
     setMainCategory("Womens");
@@ -644,6 +647,7 @@ const AdminPanel = () => {
     setIsMensCollection(product.isMensCollection || false);
     setShippingCostCod(product.shippingCostCod || "");
     setShippingCostBank(product.shippingCostBank || "");
+    setWeight(product.weight || "");
     setEstimatedShippingDate(product.estimatedShippingDate || "");
     setDescription(product.description);
 
@@ -902,7 +906,7 @@ const AdminPanel = () => {
                  </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">COD Shipping (Rs.)</label>
                     <input
@@ -920,6 +924,16 @@ const AdminPanel = () => {
                       step="0.01"
                       value={shippingCostBank}
                       onChange={(e) => setShippingCostBank(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                    />
+                 </div>
+                 <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Weight (g)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
                     />
                  </div>
@@ -1466,6 +1480,7 @@ const AdminPanel = () => {
                                         {selectedOrder.customer?.phone2 && <p><span className="font-medium">Phone 2:</span> {selectedOrder.customer.phone2}</p>}
                                         <p><span className="font-medium">Address:</span> {selectedOrder.customer?.address || 'N/A'}, {selectedOrder.customer?.city || 'N/A'}</p>
                                         <p><span className="font-medium">Payment:</span> {selectedOrder.paymentMethod.toUpperCase()}</p>
+                                        <p><span className="font-medium">Delivery:</span> {selectedOrder.deliveryMethod || 'Courier Service'}</p>
                                         <p><span className="font-medium">Date:</span> {new Date(selectedOrder.createdAt).toLocaleString()}</p>
 
                                         {selectedOrder.trackingInfo && (
