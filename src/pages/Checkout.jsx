@@ -14,6 +14,12 @@ const Checkout = () => {
   const navigate = useNavigate();
   const total = getCartTotal();
 
+  useEffect(() => {
+    if (!currentUser && cartItems.length > 0) {
+      setShowGuestPopup(true);
+    }
+  }, [currentUser, cartItems.length]);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -26,6 +32,7 @@ const Checkout = () => {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showGuestPopup, setShowGuestPopup] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -291,6 +298,32 @@ const Checkout = () => {
   return (
     <div className="min-h-screen bg-off-white relative">
       <Navbar />
+
+      {/* Guest Popup */}
+      {showGuestPopup && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-8 max-w-md w-full shadow-2xl relative border border-gray-100">
+            <h2 className="text-2xl font-serif text-gray-900 mb-4 text-center">Sign In for a Better Experience</h2>
+            <p className="text-gray-600 text-sm text-center mb-6">
+              Sign in to easily track your orders, manage your profile, and claim warranties hassle-free.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => navigate("/login")}
+                className="w-full bg-black text-white py-3 text-sm uppercase tracking-widest hover:bg-gold-600 transition-colors"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => setShowGuestPopup(false)}
+                className="w-full border border-gray-300 text-gray-700 py-3 text-sm uppercase tracking-widest hover:bg-gray-50 transition-colors"
+              >
+                Continue as Guest
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <h1 className="text-3xl font-serif text-gray-900 mb-8">Checkout</h1>

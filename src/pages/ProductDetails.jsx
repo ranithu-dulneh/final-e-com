@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { db } from "../firebase";
-import { ref, get, push, set } from "firebase/database";
+import { ref, get, push, set, update } from "firebase/database";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../firebase";
 import Navbar from "../components/Navbar";
@@ -27,6 +27,7 @@ const getEstimatedDeliveryDate = (days) => {
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { addToCart } = useCart();
   const { currentUser } = useAuth();
 
@@ -211,6 +212,7 @@ const ProductDetails = () => {
   };
 
   const submitReview = async () => {
+    const orderId = new URLSearchParams(location.search).get("orderId");
     if (!reviewRating || !currentUser) return;
     setIsSubmittingReview(true);
     try {
@@ -235,6 +237,10 @@ const ProductDetails = () => {
             createdAt: new Date().toISOString()
         };
         await set(newReviewRef, newReview);
+
+        if (orderId) {
+            await update(ref(db, `orders/${orderId}`), { isReviewCompleted: true });
+        }
 
         // Update local product state
         setProduct(prev => ({
