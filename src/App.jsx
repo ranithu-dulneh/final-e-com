@@ -22,6 +22,7 @@ import Marquee from "./components/Marquee";
 import BottomNav from "./components/BottomNav";
 import Profile from "./pages/Profile";
 import OrderHistory from "./pages/OrderHistory";
+import WarrantyClaim from "./pages/WarrantyClaim";
 
 function App() {
   useTrackVisit();
@@ -48,6 +49,7 @@ function App() {
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/order-history" element={<OrderHistory />} />
+              <Route path="/warranty-claim" element={<WarrantyClaim />} />
               <Route
                 path="/admin"
                 element={

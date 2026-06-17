@@ -8,13 +8,20 @@ const Login = () => {
   const [error, setError] = useState("");
   const { login, loginAnonymously, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from || "/profile";
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     try {
       await login(email, password);
-      navigate("/admin");
+      // Admin users should usually go to /admin, others to their intended destination
+      if (email === 'ranithudulneth@gmail.com') {
+          navigate("/admin");
+      } else {
+          navigate(from);
+      }
     } catch (err) {
       setError("Failed to sign in. Please check your credentials.");
       console.error(err);
@@ -25,7 +32,7 @@ const Login = () => {
     setError("");
     try {
       await loginAnonymously();
-      navigate("/profile");
+      navigate(from);
     } catch (err) {
       setError("Failed to sign in as guest.");
       console.error(err);
@@ -36,7 +43,7 @@ const Login = () => {
     setError("");
     try {
       await loginWithGoogle();
-      navigate("/profile");
+      navigate(from);
     } catch (err) {
       setError("Failed to sign in with Google.");
       console.error(err);

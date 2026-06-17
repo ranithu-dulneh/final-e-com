@@ -3,7 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import Navbar from "../components/Navbar";
 import { useEffect, useState } from "react";
 import { db } from "../firebase";
-import { ref, query, orderByChild, equalTo, get } from "firebase/database";
+import { ref, get } from "firebase/database";
 
 const Profile = () => {
   const { currentUser, logout } = useAuth();
@@ -60,9 +60,16 @@ const Profile = () => {
       <div className="flex-grow max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 md:py-12">
         <div className="flex justify-between items-center mb-8">
           <h1 className="font-serif text-3xl md:text-4xl text-gray-900 tracking-tight">Profile</h1>
-          {currentUser ? (
+          <div className="flex items-center gap-4">
             <button
-              onClick={handleLogout}
+              onClick={() => navigate('/warranty-claim')}
+              className="text-xs uppercase tracking-widest text-gold-600 border border-gold-600 px-3 py-1 hover:bg-gold-50 transition-colors hidden sm:block"
+            >
+              Claim Warranty
+            </button>
+            {currentUser ? (
+              <button
+                onClick={handleLogout}
               className="text-sm uppercase tracking-wider text-gray-500 hover:text-black transition-colors"
             >
               Logout
@@ -75,9 +82,16 @@ const Profile = () => {
               Login
             </button>
           )}
+          </div>
         </div>
 
         <div className="bg-white p-6 shadow-sm border border-gray-100 mb-8">
+          <button
+            onClick={() => navigate('/warranty-claim')}
+            className="w-full text-xs uppercase tracking-widest text-gold-600 border border-gold-600 px-3 py-2 hover:bg-gold-50 transition-colors sm:hidden mb-4"
+          >
+            Claim Warranty
+          </button>
           {currentUser ? (
              <>
                 <h2 className="text-xl font-serif text-gray-900 mb-2">Welcome{currentUser.displayName ? `, ${currentUser.displayName}` : (currentUser.email ? `, ${currentUser.email}` : '')}</h2>
@@ -106,7 +120,8 @@ const Profile = () => {
               toPay: orders.filter(o => o.status === 'Pending').length,
               confirmed: orders.filter(o => o.status === 'Order confirmed').length,
               shipped: orders.filter(o => ['Dispatched', 'Arrived at the destination', 'Out for delivery'].includes(o.status)).length,
-              toReview: orders.filter(o => o.status === 'Delivered').length
+              toReview: orders.filter(o => o.status === 'Delivered').length,
+              completed: orders.filter(o => o.status === 'Completed' || o.isReviewCompleted).length
             };
 
             const toggleStatus = (statusGroup) => {
@@ -115,7 +130,7 @@ const Profile = () => {
 
             return (
               <>
-                <div className="grid grid-cols-4 gap-4 text-center">
+                <div className="grid grid-cols-5 gap-2 md:gap-4 text-center">
                   <div onClick={() => toggleStatus('toPay')} className={`relative flex flex-col items-center justify-center p-2 cursor-pointer rounded transition-colors ${selectedStatus === 'toPay' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}>
                     <span className="text-gray-400 mb-1">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
@@ -160,6 +175,17 @@ const Profile = () => {
                     )}
                     <span className="text-[10px] uppercase tracking-wider text-gray-600">To Review</span>
                   </div>
+                  <div onClick={() => toggleStatus('completed')} className={`relative flex flex-col items-center justify-center p-2 cursor-pointer rounded transition-colors ${selectedStatus === 'completed' ? 'bg-gray-100' : 'hover:bg-gray-50'}`}>
+                    <span className="text-gray-400 mb-1">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </span>
+                    {counts.completed > 0 && (
+                      <span className="absolute top-1 right-1 md:right-4 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">
+                        {counts.completed}
+                      </span>
+                    )}
+                    <span className="text-[10px] uppercase tracking-wider text-gray-600">Completed</span>
+                  </div>
                 </div>
 
                 {selectedStatus && (
@@ -171,6 +197,7 @@ const Profile = () => {
                         if (selectedStatus === 'confirmed') return o.status === 'Order confirmed';
                         if (selectedStatus === 'shipped') return ['Dispatched', 'Arrived at the destination', 'Out for delivery'].includes(o.status);
                         if (selectedStatus === 'toReview') return o.status === 'Delivered';
+                        if (selectedStatus === 'completed') return o.status === 'Completed' || o.isReviewCompleted;
                         return false;
                       }).map(order => (
                         <div key={order.id} className="p-4 bg-gray-50 border border-gray-100">
@@ -212,6 +239,7 @@ const Profile = () => {
                         if (selectedStatus === 'confirmed') return o.status === 'Order confirmed';
                         if (selectedStatus === 'shipped') return ['Dispatched', 'Arrived at the destination', 'Out for delivery'].includes(o.status);
                         if (selectedStatus === 'toReview') return o.status === 'Delivered';
+                        if (selectedStatus === 'completed') return o.status === 'Completed' || o.isReviewCompleted;
                         return false;
                       }).length === 0 && (
                         <p className="text-xs text-gray-500 text-center py-4">No orders found for this status.</p>
@@ -222,7 +250,7 @@ const Profile = () => {
               </>
             );
           })() : (
-            <div className="grid grid-cols-4 gap-4 text-center opacity-50">
+            <div className="grid grid-cols-5 gap-2 md:gap-4 text-center opacity-50">
               <div className="flex flex-col items-center justify-center p-2 rounded">
                 <span className="text-gray-400 mb-1">
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
@@ -246,6 +274,12 @@ const Profile = () => {
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" /></svg>
                 </span>
                 <span className="text-[10px] uppercase tracking-wider text-gray-600">To Review</span>
+              </div>
+              <div className="flex flex-col items-center justify-center p-2 rounded">
+                <span className="text-gray-400 mb-1">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                </span>
+                <span className="text-[10px] uppercase tracking-wider text-gray-600">Completed</span>
               </div>
             </div>
           )}

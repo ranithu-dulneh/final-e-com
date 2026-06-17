@@ -179,6 +179,29 @@ const ProductDetails = () => {
         setUserHasReviewed(true);
         setReviewRating(0);
         setReviewComment("");
+
+        // Also update the order status if we can find it
+        try {
+            const ordersRef = ref(db, 'orders');
+            const snapshot = await get(ordersRef);
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                for (const key in data) {
+                    const order = data[key];
+                    if (order.userId === currentUser.uid && order.status === 'Delivered') {
+                        // Check if this order contains the reviewed item
+                        const hasItem = order.items && order.items.some(i => i.id === id || i.title === product.title);
+                        if (hasItem) {
+                            await update(ref(db, `orders/${key}`), {
+                                isReviewCompleted: true
+                            });
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Failed to update order status", e);
+        }
     } catch (error) {
         console.error("Error submitting review:", error);
         alert("Failed to submit review. Please try again.");

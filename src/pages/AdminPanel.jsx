@@ -77,7 +77,12 @@ zafira.vercel.app`;
 
 const AdminPanel = () => {
   const { logout } = useAuth();
-  const [activeTab, setActiveTab] = useState("dashboard"); // 'inventory', 'add-product', 'orders', 'settings', 'offers', 'categories'
+  const [activeTab, setActiveTab] = useState("dashboard"); // 'inventory', 'add-product', 'orders', 'settings', 'offers', 'categories', 'warranties'
+
+  // Warranties State
+  const [warranties, setWarranties] = useState([]);
+  const [loadingWarranties, setLoadingWarranties] = useState(false);
+  const [selectedWarranty, setSelectedWarranty] = useState(null);
 
   // Settings State
   const [codCharge, setCodCharge] = useState("");
@@ -299,8 +304,90 @@ const AdminPanel = () => {
       fetchCategories();
     } else if (activeTab === 'add-product') {
       fetchCategories();
+    } else if (activeTab === 'warranties') {
+      fetchWarranties();
     }
   }, [activeTab]);
+
+  const fetchWarranties = async () => {
+    setLoadingWarranties(true);
+    try {
+      const snapshot = await get(ref(db, 'warrantyClaims'));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        const claimsList = Object.keys(data).map(key => ({
+          id: key,
+          ...data[key]
+        })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        setWarranties(claimsList);
+      } else {
+        setWarranties([]);
+      }
+    } catch (error) {
+      console.error("Error fetching warranties:", error);
+    }
+    setLoadingWarranties(false);
+  };
+
+  const handleUpdateWarrantyStatus = async (id, newStatus) => {
+    if (confirm(`Are you sure you want to mark this claim as ${newStatus}?`)) {
+        try {
+            await update(ref(db, `warrantyClaims/${id}`), {
+                status: newStatus,
+                updatedAt: new Date().toISOString()
+            });
+            fetchWarranties();
+            setSelectedWarranty(null);
+        } catch (error) {
+            console.error("Error updating warranty status:", error);
+            alert("Failed to update status.");
+        }
+    }
+  };
+
+  const handleCreateWarrantyReplacementOrder = async (warranty) => {
+      if (confirm("This will create a new replacement order with Rs. 0 total amount. Proceed?")) {
+          try {
+              const newOrderRef = push(ref(db, 'orders'));
+              await set(newOrderRef, {
+                  userId: warranty.userId || null,
+                  customer: {
+                      name: warranty.name,
+                      mobile: warranty.mobile,
+                      email: warranty.userEmail || ""
+                  },
+                  items: [{
+                      title: `Warranty Replacement: ${warranty.itemDetails}`,
+                      price: 0,
+                      quantity: 1,
+                      imageUrl: warranty.imageUrl || ""
+                  }],
+                  totalAmount: 0,
+                  subtotal: 0,
+                  deliveryCharge: 0,
+                  discount: 0,
+                  paymentMethod: "Warranty Claim",
+                  status: "Warranty Replacement Pending",
+                  createdAt: new Date().toISOString(),
+                  isWarrantyReplacement: true,
+                  warrantyClaimId: warranty.id
+              });
+
+              await update(ref(db, `warrantyClaims/${warranty.id}`), {
+                  status: "Accepted & Processing",
+                  replacementOrderId: newOrderRef.key,
+                  updatedAt: new Date().toISOString()
+              });
+
+              alert("Replacement order created successfully!");
+              fetchWarranties();
+              setSelectedWarranty(null);
+          } catch (error) {
+              console.error("Error creating replacement order:", error);
+              alert("Failed to create replacement order.");
+          }
+      }
+  };
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
@@ -787,6 +874,12 @@ const AdminPanel = () => {
                     className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'orders' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
                 >
                     <ShoppingBag size={16} /> Orders
+                </button>
+                <button
+                    onClick={() => setActiveTab('warranties')}
+                    className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'warranties' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <ShieldAlert size={16} /> Warranties
                 </button>
                 <button
                     onClick={() => setActiveTab('settings')}
@@ -1872,6 +1965,132 @@ const AdminPanel = () => {
                      </div>
                  </div>
              </div>
+        </div>
+      ) : activeTab === 'warranties' ? (
+        // Warranties View
+        <div className="bg-white p-6 shadow-sm border border-gray-100">
+            <h2 className="text-xl font-serif mb-6 border-b pb-4">Warranty Claims ({warranties.length})</h2>
+
+            <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="bg-gray-50 border-y border-gray-200">
+                            <th className="py-3 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Customer</th>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Item Details</th>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="py-3 px-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                        {loadingWarranties ? (
+                            <tr><td colSpan="5" className="py-8 text-center text-sm text-gray-500">Loading claims...</td></tr>
+                        ) : warranties.length === 0 ? (
+                            <tr><td colSpan="5" className="py-8 text-center text-sm text-gray-500">No warranty claims found.</td></tr>
+                        ) : warranties.map(claim => (
+                            <tr key={claim.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="py-3 px-4 text-sm text-gray-500 whitespace-nowrap">{new Date(claim.createdAt).toLocaleDateString()}</td>
+                                <td className="py-3 px-4 text-sm text-gray-900">
+                                    <p className="font-medium">{claim.name}</p>
+                                    <p className="text-xs text-gray-500">{claim.mobile}</p>
+                                </td>
+                                <td className="py-3 px-4 text-sm text-gray-500">
+                                    <p className="line-clamp-2">{claim.itemDetails}</p>
+                                    <p className="text-xs mt-1"><span className="font-bold">Type:</span> {claim.orderType}</p>
+                                </td>
+                                <td className="py-3 px-4 text-sm">
+                                    <span className={`inline-block px-2 py-1 text-xs rounded uppercase tracking-wider ${claim.status.includes('Accepted') ? 'bg-green-100 text-green-800' : claim.status === 'Rejected' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                        {claim.status}
+                                    </span>
+                                </td>
+                                <td className="py-3 px-4 text-right">
+                                    <button
+                                        onClick={() => setSelectedWarranty(claim)}
+                                        className="text-xs uppercase tracking-widest text-gold-600 hover:text-gold-700 font-bold"
+                                    >
+                                        Review
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Warranty Details Modal */}
+            {selectedWarranty && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative">
+                        <button
+                            onClick={() => setSelectedWarranty(null)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-900"
+                        >
+                            <X size={24} />
+                        </button>
+
+                        <h3 className="text-2xl font-serif mb-6 border-b pb-4">Review Warranty Claim</h3>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                            <div>
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Customer Details</h4>
+                                <div className="bg-gray-50 p-4 border border-gray-100 space-y-2 text-sm">
+                                    <p><span className="font-bold text-gray-700">Name:</span> {selectedWarranty.name}</p>
+                                    <p><span className="font-bold text-gray-700">Mobile:</span> {selectedWarranty.mobile}</p>
+                                    <p><span className="font-bold text-gray-700">Email:</span> {selectedWarranty.userEmail}</p>
+                                </div>
+
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2 mt-6">Order Information</h4>
+                                <div className="bg-gray-50 p-4 border border-gray-100 space-y-2 text-sm">
+                                    <p><span className="font-bold text-gray-700">Type:</span> <span className="uppercase">{selectedWarranty.orderType}</span></p>
+                                    <p><span className="font-bold text-gray-700">Ref/ID:</span> {selectedWarranty.orderId}</p>
+                                    <p><span className="font-bold text-gray-700">Items:</span> {selectedWarranty.itemDetails}</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Damage Image</h4>
+                                {selectedWarranty.imageUrl ? (
+                                    <div className="border border-gray-200 p-2 h-48 flex items-center justify-center">
+                                        <img src={selectedWarranty.imageUrl} alt="Damage" className="max-h-full max-w-full object-contain" />
+                                    </div>
+                                ) : (
+                                    <div className="border border-dashed border-gray-300 p-4 h-48 flex items-center justify-center text-gray-500 text-sm">
+                                        No image provided
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">Cause / Issue Description</h4>
+                        <div className="bg-gray-50 p-4 border border-gray-100 mb-8 text-sm text-gray-800">
+                            {selectedWarranty.cause}
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-4 border-t pt-6">
+                            {selectedWarranty.status === 'Pending' ? (
+                                <>
+                                    <button
+                                        onClick={() => handleUpdateWarrantyStatus(selectedWarranty.id, 'Rejected')}
+                                        className="flex-1 bg-white border border-red-500 text-red-600 hover:bg-red-50 py-3 uppercase tracking-widest text-sm transition-colors"
+                                    >
+                                        Reject Claim
+                                    </button>
+                                    <button
+                                        onClick={() => handleCreateWarrantyReplacementOrder(selectedWarranty)}
+                                        className="flex-1 bg-black text-white hover:bg-gold-600 py-3 uppercase tracking-widest text-sm transition-colors"
+                                    >
+                                        Accept & Create Order
+                                    </button>
+                                </>
+                            ) : (
+                                <p className="text-sm font-bold text-gray-500 uppercase tracking-widest w-full text-center">
+                                    Claim is already processed: {selectedWarranty.status}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
       ) : activeTab === 'settings' ? (
         // Settings View
