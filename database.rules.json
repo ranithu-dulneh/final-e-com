@@ -2,6 +2,11 @@
   "rules": {
     ".read": true,
     ".write": "auth != null",
+    "careers": {
+      "applications": {
+        ".write": true
+      }
+    },
     "orders": {
       ".indexOn": ["userId"]
     }

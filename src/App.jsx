@@ -22,9 +22,12 @@ import Marquee from "./components/Marquee";
 import BottomNav from "./components/BottomNav";
 import Profile from "./pages/Profile";
 import OrderHistory from "./pages/OrderHistory";
+import Careers from "./pages/Careers";
 
 function App() {
   useTrackVisit();
+  const isCareersSubdomain = window.location.hostname.split('.')[0] === 'careers';
+
   return (
     <Router>
       <ScrollToTop />
@@ -34,8 +37,9 @@ function App() {
         <CartProvider>
           <div className="pb-16 md:pb-0">
             <Routes>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={isCareersSubdomain ? <Careers /> : <Home />} />
           <Route path="/shop" element={<Shop />} />
+          <Route path="/careers" element={<Careers />} />
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
