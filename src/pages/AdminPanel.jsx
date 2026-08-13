@@ -6,7 +6,7 @@ import { db } from "../firebase";
 import { ref, push, set, get, remove, update } from "firebase/database";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { storage } from "../firebase";
-import { Trash2, Edit2, Eye, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle, UploadCloud, Star } from "lucide-react";
+import { Trash2, Edit2, Eye, LogOut, Package, ShoppingBag, Truck, Check, X, Search, Settings, Save, MessageCircle, UploadCloud, Star, Briefcase, FileText } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const STATUSES = [
@@ -121,6 +121,22 @@ const AdminPanel = () => {
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // Careers State
+  const [careersJobs, setCareersJobs] = useState([]);
+  const [careersApplications, setCareersApplications] = useState([]);
+  const [loadingCareers, setLoadingCareers] = useState(false);
+  const [careersSection, setCareersSection] = useState("listings"); // 'listings', 'applications'
+
+  // Job Form States
+  const [jobTitle, setJobTitle] = useState("");
+  const [jobType, setJobType] = useState("Full-time");
+  const [jobSalary, setJobSalary] = useState("");
+  const [jobDescription, setJobDescription] = useState("");
+  const [jobMinAge, setJobMinAge] = useState("");
+  const [jobMinExperience, setJobMinExperience] = useState("");
+  const [editingJobId, setEditingJobId] = useState(null);
+  const [isSavingJob, setIsSavingJob] = useState(false);
 
   // Manual Review State
   const [reviewProductId, setReviewProductId] = useState("");
@@ -289,24 +305,6 @@ const AdminPanel = () => {
   };
 
   useEffect(() => {
-    if (activeTab === 'inventory') {
-      fetchProducts();
-    } else if (activeTab === 'orders') {
-      fetchOrders();
-    } else if (activeTab === 'settings') {
-      fetchSettings();
-    } else if (activeTab === 'offers') {
-      fetchOffers();
-    } else if (activeTab === 'categories') {
-      fetchCategories();
-    } else if (activeTab === 'add-product') {
-      fetchCategories();
-    } else if (activeTab === 'reviews') {
-      fetchProducts();
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
     if (searchTerm.trim() === "") {
         setFilteredProducts(products);
     } else {
@@ -433,6 +431,113 @@ const AdminPanel = () => {
     }
   };
 
+  const fetchCareersData = async () => {
+    setLoadingCareers(true);
+    try {
+      const jobsSnapshot = await get(ref(db, 'careers/jobs'));
+      if (jobsSnapshot.exists()) {
+        const data = jobsSnapshot.val();
+        setCareersJobs(Object.keys(data).map(k => ({ id: k, ...data[k] })));
+      } else {
+        setCareersJobs([]);
+      }
+
+      const appsSnapshot = await get(ref(db, 'careers/applications'));
+      if (appsSnapshot.exists()) {
+        const data = appsSnapshot.val();
+        setCareersApplications(Object.keys(data).map(k => ({ id: k, ...data[k] })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      } else {
+        setCareersApplications([]);
+      }
+    } catch (error) {
+      console.error("Error fetching careers data:", error);
+    } finally {
+      setLoadingCareers(false);
+    }
+  };
+
+  const handleSaveJob = async (e) => {
+    e.preventDefault();
+    if (!jobTitle || !jobType || !jobSalary || !jobMinAge || !jobMinExperience) {
+      alert("Please fill in all mandatory job fields.");
+      return;
+    }
+
+    setIsSavingJob(true);
+    try {
+      const jobData = {
+        title: jobTitle,
+        type: jobType,
+        salary: jobSalary,
+        description: jobDescription,
+        minAge: Number(jobMinAge),
+        minExperience: Number(jobMinExperience),
+        updatedAt: new Date().toISOString()
+      };
+
+      if (editingJobId) {
+        await update(ref(db, `careers/jobs/${editingJobId}`), jobData);
+        alert("Job listing updated successfully!");
+      } else {
+        const newJobRef = push(ref(db, 'careers/jobs'));
+        await set(newJobRef, {
+          ...jobData,
+          createdAt: new Date().toISOString()
+        });
+        alert("Job listing added successfully!");
+      }
+
+      setJobTitle("");
+      setJobType("Full-time");
+      setJobSalary("");
+      setJobDescription("");
+      setJobMinAge("");
+      setJobMinExperience("");
+      setEditingJobId(null);
+
+      fetchCareersData();
+    } catch (err) {
+      console.error("Error saving job:", err);
+      alert("Failed to save job: " + err.message);
+    } finally {
+      setIsSavingJob(false);
+    }
+  };
+
+  const handleEditJob = (job) => {
+    setEditingJobId(job.id);
+    setJobTitle(job.title);
+    setJobType(job.type || "Full-time");
+    setJobSalary(job.salary || "");
+    setJobDescription(job.description || "");
+    setJobMinAge(job.minAge || "");
+    setJobMinExperience(job.minExperience || "");
+  };
+
+  const handleDeleteJob = async (id) => {
+    if (window.confirm("Are you sure you want to delete this job listing?")) {
+      try {
+        await remove(ref(db, `careers/jobs/${id}`));
+        fetchCareersData();
+      } catch (err) {
+        console.error("Error deleting job:", err);
+        alert("Failed to delete job.");
+      }
+    }
+  };
+
+  const handleDeleteApplication = async (id) => {
+    if (window.confirm("Are you sure you want to delete this application?")) {
+      try {
+        await remove(ref(db, `careers/applications/${id}`));
+        fetchCareersData();
+      } catch (err) {
+        console.error("Error deleting application:", err);
+        alert("Failed to delete application.");
+      }
+    }
+  };
+
   const handleSaveCategory = async (e) => {
     e.preventDefault();
     if (!newCatName) return;
@@ -512,6 +617,27 @@ const AdminPanel = () => {
       setLoadingOffers(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (activeTab === 'inventory') {
+      fetchProducts();
+    } else if (activeTab === 'orders') {
+      fetchOrders();
+    } else if (activeTab === 'settings') {
+      fetchSettings();
+    } else if (activeTab === 'offers') {
+      fetchOffers();
+    } else if (activeTab === 'categories') {
+      fetchCategories();
+    } else if (activeTab === 'add-product') {
+      fetchCategories();
+    } else if (activeTab === 'reviews') {
+      fetchProducts();
+    } else if (activeTab === 'careers') {
+      fetchCareersData();
+    }
+  }, [activeTab]);
 
   const handleSaveOffers = async (e) => {
     e.preventDefault();
@@ -824,6 +950,12 @@ const AdminPanel = () => {
                     className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'reviews' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
                 >
                     <Star size={16} /> Reviews
+                </button>
+                <button
+                    onClick={() => setActiveTab('careers')}
+                    className={`flex items-center gap-2 text-sm uppercase tracking-widest ${activeTab === 'careers' ? 'text-gold-500 font-bold' : 'text-gray-400 hover:text-white'}`}
+                >
+                    <Briefcase size={16} /> Careers
                 </button>
             </nav>
         </div>
@@ -2148,6 +2280,328 @@ const AdminPanel = () => {
             </button>
         </div>
         </>
+      ) : activeTab === 'careers' ? (
+        <div className="bg-white p-6 shadow-sm border border-gray-100 max-w-6xl mx-auto">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4 gap-4">
+            <h2 className="text-2xl font-serif">Careers Management</h2>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCareersSection('listings')}
+                className={`px-4 py-2 text-xs uppercase tracking-wider font-semibold border transition-all ${
+                  careersSection === 'listings'
+                    ? 'bg-black text-white border-black'
+                    : 'bg-white text-gray-600 border-gray-200 hover:text-black hover:border-black'
+                }`}
+              >
+                Job Listings
+              </button>
+              <button
+                onClick={() => setCareersSection('applications')}
+                className={`px-4 py-2 text-xs uppercase tracking-wider font-semibold border transition-all ${
+                  careersSection === 'applications'
+                    ? 'bg-black text-white border-black'
+                    : 'bg-white text-gray-600 border-gray-200 hover:text-black hover:border-black'
+                }`}
+              >
+                Applications ({careersApplications.length})
+              </button>
+            </div>
+          </div>
+
+          {loadingCareers ? (
+            <p className="text-center text-gray-500 py-12">Loading careers data...</p>
+          ) : careersSection === 'listings' ? (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Job Form */}
+              <div className="lg:col-span-1 bg-gray-50 p-6 border border-gray-100">
+                <h3 className="text-lg font-serif mb-4 border-b pb-2">
+                  {editingJobId ? 'Edit Job Opening' : 'Add New Job Opening'}
+                </h3>
+                <form onSubmit={handleSaveJob} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                      Job Title / Position Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={jobTitle}
+                      onChange={(e) => setJobTitle(e.target.value)}
+                      placeholder="e.g. Delivery Driver"
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none text-sm bg-white"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                        Position Type *
+                      </label>
+                      <select
+                        value={jobType}
+                        onChange={(e) => setJobType(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none text-sm bg-white"
+                      >
+                        <option value="Full-time">Full-time</option>
+                        <option value="Part-time">Part-time</option>
+                        <option value="Contract">Contract</option>
+                        <option value="Freelance">Freelance</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                        Salary Details *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={jobSalary}
+                        onChange={(e) => setJobSalary(e.target.value)}
+                        placeholder="e.g. Rs. 45,000"
+                        className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none text-sm bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                        Min Age Requirement *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        value={jobMinAge}
+                        onChange={(e) => setJobMinAge(e.target.value)}
+                        placeholder="e.g. 18"
+                        className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none text-sm bg-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                        Min Exp (Years) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        value={jobMinExperience}
+                        onChange={(e) => setJobMinExperience(e.target.value)}
+                        placeholder="e.g. 1"
+                        className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none text-sm bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                      Job Description / Duties
+                    </label>
+                    <textarea
+                      rows="4"
+                      value={jobDescription}
+                      onChange={(e) => setJobDescription(e.target.value)}
+                      placeholder="Describe responsibilities and requirements..."
+                      className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none text-sm bg-white resize-none"
+                    />
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="submit"
+                      disabled={isSavingJob}
+                      className="flex-1 bg-black text-white py-2.5 text-xs uppercase tracking-widest hover:bg-gold-600 transition-colors disabled:opacity-50 font-bold"
+                    >
+                      {isSavingJob ? 'Saving...' : (editingJobId ? 'Update' : 'Add Listing')}
+                    </button>
+                    {editingJobId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingJobId(null);
+                          setJobTitle("");
+                          setJobType("Full-time");
+                          setJobSalary("");
+                          setJobDescription("");
+                          setJobMinAge("");
+                          setJobMinExperience("");
+                        }}
+                        className="px-4 bg-gray-200 text-gray-700 py-2.5 text-xs uppercase tracking-widest hover:bg-gray-300 transition-colors font-bold"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+
+              {/* Active Jobs List */}
+              <div className="lg:col-span-2">
+                <h3 className="text-lg font-serif mb-4 border-b pb-2">Active Job Listings</h3>
+                {careersJobs.length === 0 ? (
+                  <p className="text-gray-500 text-sm py-4 italic">No active job listings. Create one to list openings on the Careers subdomain.</p>
+                ) : (
+                  <div className="overflow-x-auto border border-gray-100 rounded-sm">
+                    <table className="min-w-full divide-y divide-gray-200 text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider text-xs">Title</th>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider text-xs">Type</th>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider text-xs">Salary</th>
+                          <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider text-xs">Reqs (Age/Exp)</th>
+                          <th className="px-4 py-3 text-right font-semibold text-gray-600 uppercase tracking-wider text-xs">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-100">
+                        {careersJobs.map((job) => (
+                          <tr key={job.id} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-3 font-medium text-gray-900">{job.title}</td>
+                            <td className="px-4 py-3 text-gray-500">
+                              <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+                                {job.type}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500">{job.salary}</td>
+                            <td className="px-4 py-3 text-gray-500 text-xs">
+                              Age: {job.minAge}+ | Exp: {job.minExperience} yrs+
+                            </td>
+                            <td className="px-4 py-3 text-right space-x-2">
+                              <button
+                                onClick={() => handleEditJob(job)}
+                                className="text-indigo-600 hover:text-indigo-900"
+                                title="Edit"
+                              >
+                                <Edit2 size={16} className="inline" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteJob(job.id)}
+                                className="text-red-600 hover:text-red-900"
+                                title="Delete"
+                              >
+                                <Trash2 size={16} className="inline" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Applications Section */
+            <div>
+              <h3 className="text-lg font-serif mb-4 border-b pb-2">Job Applicants ({careersApplications.length})</h3>
+              {careersApplications.length === 0 ? (
+                <p className="text-gray-500 text-sm py-4 italic">No applications received yet.</p>
+              ) : (
+                <div className="overflow-x-auto border border-gray-100 rounded-sm">
+                  <table className="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider text-xs">Applicant</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider text-xs">Applied Position</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider text-xs">Contact Details</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider text-xs">Qualifications</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-600 uppercase tracking-wider text-xs">Verification Badges</th>
+                        <th className="px-4 py-3 text-center font-semibold text-gray-600 uppercase tracking-wider text-xs">CV</th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-600 uppercase tracking-wider text-xs">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-100">
+                      {careersApplications.map((app) => {
+                        const associatedJob = careersJobs.find(j => j.id === app.jobId);
+                        let meetsAge = true;
+                        let meetsExp = true;
+                        if (associatedJob) {
+                          meetsAge = Number(app.age) >= Number(associatedJob.minAge || 0);
+                          meetsExp = Number(app.experienceYears) >= Number(associatedJob.minExperience || 0);
+                        }
+
+                        return (
+                          <tr key={app.id} className="hover:bg-gray-50/50">
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-gray-900">{app.name}</div>
+                              <div className="text-xs text-gray-400 mt-0.5">Submitted: {new Date(app.createdAt).toLocaleDateString()}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-gray-800">{app.jobTitle}</div>
+                              {associatedJob ? (
+                                <div className="text-[10px] text-gray-500 uppercase tracking-wider">Reqs: Age {associatedJob.minAge}+, Exp {associatedJob.minExperience} yrs+</div>
+                              ) : (
+                                <div className="text-[10px] text-red-500 italic">Job Listing Deleted</div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="text-gray-900 font-medium">{app.mobile}</div>
+                              <div className="text-xs text-gray-500 truncate max-w-xs">{app.address}</div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="text-gray-900">Age: {app.age} years</div>
+                              <div className="text-xs text-gray-500">{app.experienceYears} years experience</div>
+                              {app.experienceDetails && app.experienceDetails !== "No additional experience details provided." && (
+                                <div className="text-[11px] text-gray-400 mt-1 italic line-clamp-2 max-w-xs" title={app.experienceDetails}>
+                                  "{app.experienceDetails}"
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 space-y-1">
+                              {associatedJob ? (
+                                <>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`w-2 h-2 rounded-full ${meetsAge ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                    <span className={`text-xs font-semibold ${meetsAge ? 'text-green-700' : 'text-red-700'}`}>
+                                      Age Check: {app.age} vs {associatedJob.minAge}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className={`w-2 h-2 rounded-full ${meetsExp ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                                    <span className={`text-xs font-semibold ${meetsExp ? 'text-green-700' : 'text-red-700'}`}>
+                                      Exp Check: {app.experienceYears} vs {associatedJob.minExperience} yrs
+                                    </span>
+                                  </div>
+                                </>
+                              ) : (
+                                <span className="px-2 py-0.5 bg-yellow-50 text-yellow-700 text-xs font-semibold border border-yellow-200">
+                                  No Active Job Target
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              {app.cvUrl ? (
+                                <a
+                                  href={app.cvUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-gold-600 hover:text-gold-700 font-semibold text-xs border border-gold-200 hover:border-gold-500 bg-gold-50/30 px-2 py-1 rounded-sm"
+                                >
+                                  <FileText size={14} /> CV File
+                                </a>
+                              ) : (
+                                <span className="text-xs text-gray-400">No CV</span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <button
+                                onClick={() => handleDeleteApplication(app.id)}
+                                className="text-red-600 hover:text-red-900"
+                                title="Delete application"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       ) : null}
     </div>
     </div>
