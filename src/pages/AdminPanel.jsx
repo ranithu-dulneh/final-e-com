@@ -2422,7 +2422,7 @@ const AdminPanel = () => {
                                         </div>
                                     ) : (
                                         <button
-                                            onClick={() => setEditingReplyId(review.reviewId)}
+                                            onClick={() => { setEditingReplyId(review.reviewId); setReplyText(""); }}
                                             className="text-xs flex items-center gap-1 text-blue-600 hover:text-blue-800"
                                         >
                                             <MessageCircle size={12} /> Reply to review
