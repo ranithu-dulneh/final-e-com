@@ -6,7 +6,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage
 import { storage } from "../firebase";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
-import { ShoppingBag, CreditCard, ChevronLeft, ChevronRight, Truck, RefreshCw, ShieldCheck, Star } from "lucide-react";
+import { ShoppingBag, CreditCard, ChevronLeft, ChevronRight, Truck, RefreshCw, ShieldCheck, Star, ChevronDown, ChevronUp } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -48,6 +48,7 @@ const ProductDetails = () => {
   const [reviewName, setReviewName] = useState("");
   const [visibleReviewsCount, setVisibleReviewsCount] = useState(4);
   const [selectedReviewImage, setSelectedReviewImage] = useState(null);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   useEffect(() => {
     if (currentUser && currentUser.displayName) {
@@ -617,8 +618,22 @@ const ProductDetails = () => {
 
             {product.instructions && (
               <div className="bg-white p-6 border border-gray-100 rounded-sm">
-                <h3 className="text-gray-900 font-serif text-lg mb-3">Instructions & Care</h3>
-                <p className="text-gray-600 text-sm whitespace-pre-line leading-relaxed">{product.instructions}</p>
+                <button
+                  className="w-full flex justify-between items-center text-left focus:outline-none"
+                  onClick={() => setShowInstructions(!showInstructions)}
+                >
+                  <h3 className="text-gray-900 font-serif text-lg mb-0">Instructions & Care</h3>
+                  {showInstructions ? (
+                    <ChevronUp className="text-gray-500" size={20} />
+                  ) : (
+                    <ChevronDown className="text-gray-500" size={20} />
+                  )}
+                </button>
+                {showInstructions && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-gray-600 text-sm whitespace-pre-line leading-relaxed">{product.instructions}</p>
+                  </div>
+                )}
               </div>
             )}
 
