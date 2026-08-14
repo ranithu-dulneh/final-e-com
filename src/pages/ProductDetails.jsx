@@ -452,6 +452,12 @@ const ProductDetails = () => {
                                            ))}
                                        </div>
                                    )}
+                                   {review.adminReply && (
+                                       <div className="mt-4 bg-gray-50 border-l-2 border-gold-500 p-3 text-sm">
+                                           <p className="font-semibold text-gray-900 mb-1">Store Owner</p>
+                                           <p className="text-gray-700">{review.adminReply}</p>
+                                       </div>
+                                   )}
                                </div>
                            ))}
                            {Object.values(product.reviews).length > visibleReviewsCount && (
