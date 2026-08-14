@@ -48,6 +48,7 @@ export const CartProvider = ({ children }) => {
             selectedVariant: variantName,
             selectedVariantFull: variant, // Store full variant object if needed
             quantity: quantity,
+            sourceLink: product.sourceLink || undefined,
           },
         ];
       }

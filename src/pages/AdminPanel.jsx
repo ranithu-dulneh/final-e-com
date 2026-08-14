@@ -194,6 +194,7 @@ const AdminPanel = () => {
   });
 
   const [instructions, setInstructions] = useState("");
+  const [sourceLink, setSourceLink] = useState("");
   const [couponCode, setCouponCode] = useState("");
   const [couponDiscount, setCouponDiscount] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -357,6 +358,7 @@ const AdminPanel = () => {
         category: finalCategory.trim(),
         subCategory,
         instructions,
+        sourceLink: sourceLink || "",
         imageUrl: imageUrl || "",
         variantsList: finalVariants,
         commitments: commitments,
@@ -754,6 +756,7 @@ const AdminPanel = () => {
       online: true
     });
     setInstructions("");
+    setSourceLink("");
     setCouponCode("");
     setCouponDiscount("");
     setEditMode(false);
@@ -782,6 +785,7 @@ const AdminPanel = () => {
     setCategory(product.category || "");
 
     setInstructions(product.instructions || "");
+    setSourceLink(product.sourceLink || "");
 
     // Handle variants population (migrate old format if needed)
     if (Array.isArray(product.variantsList)) {
@@ -1311,6 +1315,18 @@ const AdminPanel = () => {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Source Link (Dropshipping) - Admin Only</label>
+                <input
+                  type="text"
+                  value={sourceLink}
+                  onChange={(e) => setSourceLink(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none bg-yellow-50"
+                  placeholder="Link to order the dropshipping item from source"
+                />
+                <p className="text-xs text-gray-400 mt-1">This link will not be visible to customers.</p>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Product Images</label>
 
                 {/* File Upload Option */}
@@ -1670,15 +1686,36 @@ const AdminPanel = () => {
 
                                     <h4 className="text-sm font-bold uppercase tracking-widest text-gray-500 mb-3 border-b pb-2">Items</h4>
                                     <div className="space-y-3">
-                                        {selectedOrder.items && selectedOrder.items.map((item, idx) => (
-                                            <div key={idx} className="flex justify-between items-start text-sm bg-gray-50 p-2 rounded-sm border border-gray-100">
-                                                <div>
-                                                    <p className="font-medium text-gray-900">{item.title}</p>
-                                                    <p className="text-gray-500 text-xs mt-1">Variant: {item.selectedVariant || 'Default'} | Qty: {item.quantity}</p>
+                                        {selectedOrder.items && selectedOrder.items.map((item, idx) => {
+                                            const isDropshipping = !!item.sourceLink;
+                                            return (
+                                            <div key={idx} className={`flex flex-col text-sm p-2 rounded-sm border ${isDropshipping ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50 border-gray-100'}`}>
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <p className="font-medium text-gray-900">
+                                                            {item.title} {isDropshipping && <span className="text-[10px] bg-yellow-200 text-yellow-800 px-1 py-0.5 ml-2 rounded font-bold uppercase tracking-wider">Dropshipping</span>}
+                                                        </p>
+                                                        <p className="text-gray-500 text-xs mt-1">Variant: {item.selectedVariant || 'Default'} | Qty: {item.quantity}</p>
+                                                    </div>
+                                                    <p className="font-medium text-gray-900">Rs. {(item.price * item.quantity).toFixed(2)}</p>
                                                 </div>
-                                                <p className="font-medium text-gray-900">Rs. {(item.price * item.quantity).toFixed(2)}</p>
+                                                {isDropshipping && (
+                                                    <div className="mt-2 pt-2 border-t border-yellow-200 flex items-center justify-between">
+                                                        <span className="text-xs text-yellow-800 font-medium truncate pr-2 max-w-[200px]">{item.sourceLink}</span>
+                                                        <button
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(item.sourceLink);
+                                                                alert('Source link copied to clipboard!');
+                                                            }}
+                                                            className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-300 font-medium transition-colors"
+                                                        >
+                                                            Copy Link
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
-                                        ))}
+                                            );
+                                        })}
                                         <div className="border-t pt-3 mt-4 flex justify-between font-bold text-lg border-gray-200">
                                             <span>Total</span>
                                             <span>Rs. {parseFloat(selectedOrder.totalAmount).toFixed(2)}</span>
