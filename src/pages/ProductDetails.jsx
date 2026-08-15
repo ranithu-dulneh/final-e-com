@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { db } from "../firebase";
 import { ref, get, push, set } from "firebase/database";
@@ -40,21 +40,14 @@ const ProductDetails = () => {
 
   // Review state
   const [hasPurchased, setHasPurchased] = useState(false);
-  const [userHasReviewed, setUserHasReviewed] = useState(false);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewImages, setReviewImages] = useState([]);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [reviewName, setReviewName] = useState("");
+  const [reviewName, setReviewName] = useState(currentUser?.displayName || "");
   const [visibleReviewsCount, setVisibleReviewsCount] = useState(4);
   const [selectedReviewImage, setSelectedReviewImage] = useState(null);
   const [showInstructions, setShowInstructions] = useState(false);
-
-  useEffect(() => {
-    if (currentUser && currentUser.displayName) {
-      setReviewName(currentUser.displayName);
-    }
-  }, [currentUser]);
 
   useEffect(() => {
     const fetchProductData = async () => {
@@ -155,22 +148,19 @@ const ProductDetails = () => {
     fetchProductData();
   }, [id]);
 
-  useEffect(() => {
-    if (selectedVariant && selectedVariant.imageUrl) {
-      const url = selectedVariant.imageUrl;
-      // Check if image is already in the list
+  const handleVariantSelect = (v) => {
+    setSelectedVariant(v);
+    if (v && v.imageUrl) {
+      const url = v.imageUrl;
       const index = images.findIndex((img) => img === url);
-
       if (index !== -1) {
         setCurrentImageIndex(index);
       } else {
-        // Add to the front of the list and set as current
         setImages((prev) => [url, ...prev]);
         setCurrentImageIndex(0);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedVariant]);
+  };
 
   // Check if user has purchased the item
   useEffect(() => {
@@ -198,12 +188,15 @@ const ProductDetails = () => {
       };
       checkPurchase();
 
-      if (product.reviews) {
-          const reviewed = Object.values(product.reviews).some(rev => rev.userId === currentUser.uid);
-          setUserHasReviewed(reviewed);
-      }
     }
   }, [currentUser, product, id]);
+
+  const reviewedByCurrentUser = React.useMemo(() => {
+    if (currentUser && product?.reviews) {
+      return Object.values(product.reviews).some(rev => rev.userId === currentUser.uid);
+    }
+    return false;
+  }, [currentUser, product]);
 
   const handleReviewImageChange = (e) => {
     if (e.target.files) {
@@ -245,7 +238,6 @@ const ProductDetails = () => {
                 [newReviewRef.key]: newReview
             }
         }));
-        setUserHasReviewed(true);
         setReviewRating(0);
         setReviewComment("");
     } catch (error) {
@@ -402,6 +394,33 @@ const ProductDetails = () => {
               )}
             </div>
 
+            {/* Variants Selection */}
+            {variants.length > 0 && (
+                <div>
+                    <h3 className="text-gray-900 font-serif text-sm mb-3">Select Option</h3>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                        {variants.map((variant, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => handleVariantSelect(variant)}
+                                className={`px-4 py-2 text-sm border transition-colors ${
+                                    selectedVariant === variant
+                                    ? "bg-black text-white border-black"
+                                    : "bg-white text-gray-700 border-gray-300 hover:border-black"
+                                }`}
+                            >
+                                {variant.name}
+                            </button>
+                        ))}
+                    </div>
+                    {selectedVariant && selectedVariant.specifications && (
+                        <p className="text-sm text-gray-500 italic mt-2">
+                            Specifications: {selectedVariant.specifications}
+                        </p>
+                    )}
+                </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-100">
               <button onClick={handleBuyNow} className="flex-1 bg-black text-white py-4 px-6 uppercase tracking-widest hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
                 <CreditCard size={18} /> Buy Now
@@ -479,7 +498,7 @@ const ProductDetails = () => {
                    {/* Review Form */}
                    {currentUser ? (
                        hasPurchased ? (
-                           !userHasReviewed ? (
+                           !reviewedByCurrentUser ? (
                                <div className="mt-8 bg-gray-50 p-6 rounded-sm">
                                    <h4 className="font-serif text-lg text-gray-900 mb-4">Write a Review</h4>
                                    <div className="mb-4">
@@ -547,33 +566,6 @@ const ProductDetails = () => {
                 </div>
               </div>
             </div>
-
-            {/* Variants Selection */}
-            {variants.length > 0 && (
-                <div>
-                    <h3 className="text-gray-900 font-serif text-sm mb-3">Select Option</h3>
-                    <div className="flex flex-wrap gap-2 mb-2">
-                        {variants.map((variant, idx) => (
-                            <button
-                                key={idx}
-                                onClick={() => setSelectedVariant(variant)}
-                                className={`px-4 py-2 text-sm border transition-colors ${
-                                    selectedVariant === variant
-                                    ? "bg-black text-white border-black"
-                                    : "bg-white text-gray-700 border-gray-300 hover:border-black"
-                                }`}
-                            >
-                                {variant.name}
-                            </button>
-                        ))}
-                    </div>
-                    {selectedVariant && selectedVariant.specifications && (
-                        <p className="text-sm text-gray-500 italic mt-2">
-                            Specifications: {selectedVariant.specifications}
-                        </p>
-                    )}
-                </div>
-            )}
 
             {/* Our Commitments */}
             {product.commitments && (

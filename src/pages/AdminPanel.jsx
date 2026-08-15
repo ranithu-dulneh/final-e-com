@@ -688,7 +688,7 @@ const AdminPanel = () => {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     if (activeTab === 'inventory') {
       fetchProducts();
     } else if (activeTab === 'orders') {
