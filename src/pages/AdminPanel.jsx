@@ -214,6 +214,7 @@ const AdminPanel = () => {
   };
 
 
+
   // Orders State
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -221,6 +222,21 @@ const AdminPanel = () => {
   const [orderSearchTerm, setOrderSearchTerm] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("All");
   const [selectedOrder, setSelectedOrder] = useState(null);
+
+  // Manual Order State
+  const [showAddOrderModal, setShowAddOrderModal] = useState(false);
+  const [manualOrderData, setManualOrderData] = useState({
+      customerName: "",
+      phone1: "",
+      address: "",
+      city: "",
+      productId: "",
+      quantity: 1,
+      totalAmount: 0,
+      deliveryCharge: 350,
+      paymentMethod: "cod"
+  });
+
 
   // Form State
   const [title, setTitle] = useState("");
@@ -688,7 +704,7 @@ const AdminPanel = () => {
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     if (activeTab === 'inventory') {
       fetchProducts();
     } else if (activeTab === 'orders') {
@@ -919,7 +935,67 @@ const AdminPanel = () => {
     }));
   };
 
+
+  const handleAddManualOrder = async (e) => {
+      e.preventDefault();
+      try {
+          // Fetch product details
+          const prodSnapshot = await get(ref(db, `products/${manualOrderData.productId}`));
+          let productTitle = "Unknown Product";
+          let productPrice = 0;
+          if (prodSnapshot.exists()) {
+              const pData = prodSnapshot.val();
+              productTitle = pData.title;
+              productPrice = pData.price;
+          }
+
+          const orderData = {
+              customer: {
+                  name: manualOrderData.customerName,
+                  phone1: manualOrderData.phone1,
+                  address: manualOrderData.address,
+                  city: manualOrderData.city
+              },
+              items: [{
+                  id: manualOrderData.productId,
+                  title: productTitle,
+                  quantity: manualOrderData.quantity,
+                  price: productPrice
+              }],
+              totalAmount: manualOrderData.totalAmount,
+              subtotal: manualOrderData.totalAmount - manualOrderData.deliveryCharge,
+              deliveryCharge: manualOrderData.deliveryCharge,
+              paymentMethod: manualOrderData.paymentMethod,
+              status: "Pending",
+              createdAt: new Date().toISOString(),
+              isManual: true
+          };
+
+          const newOrderRef = push(ref(db, 'orders'));
+          await set(newOrderRef, orderData);
+
+          alert("WhatsApp Order added successfully!");
+          setShowAddOrderModal(false);
+          setManualOrderData({
+              customerName: "",
+              phone1: "",
+              address: "",
+              city: "",
+              productId: "",
+              quantity: 1,
+              totalAmount: 0,
+              deliveryCharge: 350,
+              paymentMethod: "cod"
+          });
+          fetchOrders();
+      } catch (error) {
+          console.error("Error adding manual order:", error);
+          alert("Failed to add order.");
+      }
+  };
+
   const handleUpdateOrder = async (orderId) => {
+
       const updates = orderUpdates[orderId];
       if (!updates) return;
 
@@ -1562,8 +1638,18 @@ const AdminPanel = () => {
       ) : activeTab === 'orders' ? (
             // Orders View
             <div className="bg-white p-6 shadow-sm border border-gray-100">
+
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b pb-4 gap-4">
-                    <h2 className="text-xl font-serif">Orders ({orders.length})</h2>
+                    <div className="flex items-center gap-4">
+                        <h2 className="text-xl font-serif">Orders ({orders.length})</h2>
+                        <button
+                            onClick={() => setShowAddOrderModal(true)}
+                            className="bg-black text-white px-4 py-2 text-sm uppercase tracking-widest hover:bg-gold-600 transition-colors"
+                        >
+                            + Add WhatsApp Order
+                        </button>
+                    </div>
+
                     <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />

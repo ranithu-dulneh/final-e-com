@@ -47,8 +47,16 @@ const ProductDetails = () => {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewName, setReviewName] = useState("");
   const [visibleReviewsCount, setVisibleReviewsCount] = useState(4);
+
   const [selectedReviewImage, setSelectedReviewImage] = useState(null);
   const [showInstructions, setShowInstructions] = useState(false);
+
+  // Authorization State
+  const [authorizedPhone, setAuthorizedPhone] = useState(null);
+  const [authPhoneInput, setAuthPhoneInput] = useState("");
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [isAuthorizing, setIsAuthorizing] = useState(false);
+
 
   useEffect(() => {
     if (currentUser && currentUser.displayName) {
@@ -205,14 +213,60 @@ const ProductDetails = () => {
     }
   }, [currentUser, product, id]);
 
+
+  const handleAuthorizeOrder = async (e) => {
+      e.preventDefault();
+      if (!authPhoneInput) return;
+
+      setIsAuthorizing(true);
+      try {
+          const ordersRef = ref(db, 'orders');
+          const snapshot = await get(ordersRef);
+          if (snapshot.exists()) {
+              const ordersData = snapshot.val();
+              const purchased = Object.values(ordersData).some(order => {
+                  const phone1 = order.customer?.phone1 || "";
+                  const phone2 = order.customer?.phone2 || "";
+
+                  // Check if mobile matches (simple includes/match)
+                  const matchesPhone = phone1.includes(authPhoneInput) || phone2.includes(authPhoneInput);
+
+                  if (!matchesPhone) return false;
+
+                  return order.status === 'Delivered' &&
+                         order.items &&
+                         order.items.some(item => item.id === product.id || item.id === id || item.title === product.title);
+              });
+
+              if (purchased) {
+                  setHasPurchased(true);
+                  setAuthorizedPhone(authPhoneInput);
+                  setShowAuthModal(false);
+                  alert("Order authorized successfully! You can now write a review.");
+              } else {
+                  alert("No delivered order found for this product with that mobile number.");
+              }
+          } else {
+              alert("No orders found.");
+          }
+      } catch (error) {
+          console.error("Error authorizing order:", error);
+          alert("Error authorizing order.");
+      } finally {
+          setIsAuthorizing(false);
+      }
+  };
+
   const handleReviewImageChange = (e) => {
+
     if (e.target.files) {
       setReviewImages(Array.from(e.target.files));
     }
   };
 
+
   const submitReview = async () => {
-    if (!reviewRating || !currentUser) return;
+    if (!reviewRating || (!currentUser && !authorizedPhone)) return;
     setIsSubmittingReview(true);
     try {
         const imageUrls = [];
@@ -228,8 +282,9 @@ const ProductDetails = () => {
 
         const newReviewRef = push(ref(db, `products/${id}/reviews`));
         const newReview = {
-            userId: currentUser.uid,
+            userId: currentUser ? currentUser.uid : `auth_phone_${authorizedPhone}`,
             userName: reviewName.trim() || "Customer",
+
             rating: reviewRating,
             comment: reviewComment,
             images: imageUrls,
@@ -476,11 +531,13 @@ const ProductDetails = () => {
                        <p className="text-sm text-gray-500">No reviews yet.</p>
                    )}
 
+
                    {/* Review Form */}
-                   {currentUser ? (
+                   {(currentUser || authorizedPhone) ? (
                        hasPurchased ? (
                            !userHasReviewed ? (
                                <div className="mt-8 bg-gray-50 p-6 rounded-sm">
+
                                    <h4 className="font-serif text-lg text-gray-900 mb-4">Write a Review</h4>
                                    <div className="mb-4">
                                        <label className="block text-sm text-gray-700 mb-1">Your Name</label>
@@ -542,7 +599,18 @@ const ProductDetails = () => {
                            <div className="mt-6 bg-gray-50 p-4 text-sm text-gray-600 rounded-sm">You can leave a review after purchasing this product.</div>
                        )
                    ) : (
-                       <div className="mt-6 bg-gray-50 p-4 text-sm text-gray-600 rounded-sm">Please <Link to="/profile" className="text-gold-600 underline">sign in</Link> to leave a review.</div>
+                       <div className="mt-6 bg-gray-50 p-4 text-sm text-gray-600 rounded-sm flex flex-col md:flex-row items-center justify-between gap-4">
+                           <p>Please <Link to="/profile" className="text-gold-600 underline font-medium">sign in</Link> to leave a review.</p>
+                           <div className="flex items-center gap-2">
+                               <span className="text-gray-400">or</span>
+                               <button
+                                   onClick={() => setShowAuthModal(true)}
+                                   className="bg-black text-white px-4 py-2 text-xs uppercase tracking-widest hover:bg-gold-600 transition-colors"
+                               >
+                                   Authorize Order
+                               </button>
+                           </div>
+                       </div>
                    )}
                 </div>
               </div>
@@ -666,7 +734,45 @@ const ProductDetails = () => {
             <div className="text-xs text-gray-600 uppercase tracking-widest">
                 © {new Date().getFullYear()} ZAFAIR. All rights reserved.
             </div>
-        </div>
+
+            {/* Authorize Order Modal */}
+            {showAuthModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white p-6 rounded-sm w-full max-w-md">
+                        <div className="flex justify-between items-center mb-4 border-b pb-2">
+                            <h2 className="text-xl font-serif">Authorize WhatsApp Order</h2>
+                            <button onClick={() => setShowAuthModal(false)} className="text-gray-500 hover:text-black">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-4">
+                            Enter the mobile number (WhatsApp) used for your order to authorize and leave a review. Your order must be delivered to leave a review.
+                        </p>
+                        <form onSubmit={handleAuthorizeOrder} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Mobile No</label>
+                                <input
+                                    type="tel"
+                                    required
+                                    value={authPhoneInput}
+                                    onChange={(e) => setAuthPhoneInput(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 focus:border-gold-500 outline-none"
+                                    placeholder="e.g. 0707506269"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={isAuthorizing}
+                                className="w-full bg-black text-white py-3 uppercase tracking-widest hover:bg-gold-600 transition-colors disabled:opacity-50 text-sm font-bold"
+                            >
+                                {isAuthorizing ? "Authorizing..." : "Authorize"}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+</div>
       </footer>
     </div>
   );
