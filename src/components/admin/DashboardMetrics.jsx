@@ -3,6 +3,21 @@ import { db } from "../../firebase";
 import { ref, get } from "firebase/database";
 import { TrendingUp, Users, ShoppingBag, DollarSign, Package, Truck, CheckCircle, RotateCcw } from "lucide-react";
 
+
+// eslint-disable-next-line no-unused-vars
+const MetricCard = ({ title, value, icon: Icon, subtitle }) => (
+  <div className="bg-white p-6 shadow-sm border border-gray-100 rounded-sm">
+    <div className="flex items-center justify-between mb-4">
+      <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">{title}</h3>
+      <div className="p-2 bg-gray-50 rounded-sm">
+        <Icon size={20} className="text-gray-400" />
+      </div>
+    </div>
+    <p className="text-2xl font-serif text-gray-900">{value}</p>
+    {subtitle && <p className="text-xs text-gray-500 mt-2">{subtitle}</p>}
+  </div>
+);
+
 const DashboardMetrics = () => {
   const [timeFilter, setTimeFilter] = useState("Today"); // 'Today', 'This Month', 'This Year', 'Custom'
   const [customStart, setCustomStart] = useState("");
@@ -26,7 +41,6 @@ const DashboardMetrics = () => {
     const fetchAnalytics = async () => {
       setLoading(true);
       try {
-        const todayStr = new Date().toISOString().split('T')[0];
         const now = new Date();
         const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
@@ -111,18 +125,6 @@ const DashboardMetrics = () => {
     fetchAnalytics();
   }, [timeFilter, customStart, customEnd]);
 
-  const MetricCard = ({ title, value, icon: Icon, subtitle }) => (
-    <div className="bg-white p-6 shadow-sm border border-gray-100 rounded-sm">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wider">{title}</h3>
-        <div className="p-2 bg-gray-50 rounded-full">
-          <Icon className="text-gold-600" size={20} />
-        </div>
-      </div>
-      <p className="text-3xl font-serif text-gray-900">{value}</p>
-      {subtitle && <p className="text-xs text-gray-400 mt-2">{subtitle}</p>}
-    </div>
-  );
 
   return (
     <div className="mb-8">

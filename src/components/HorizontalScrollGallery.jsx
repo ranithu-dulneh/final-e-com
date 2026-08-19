@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import ProductCard from "./ProductCard";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef } from "react";
-import { motion } from "framer-motion";
 
 const HorizontalScrollGallery = ({ products, categories, title, subtitle, bannerImage, bannerText, bannerLink = "/shop" }) => {
   const scrollRef = useRef(null);

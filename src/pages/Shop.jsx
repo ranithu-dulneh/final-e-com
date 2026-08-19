@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
@@ -38,6 +37,7 @@ const Shop = () => {
             ...data[key]
           }));
           setProducts(productsData);
+
           setFilteredProducts(productsData);
 
           // Extract unique main categories
@@ -46,6 +46,7 @@ const Shop = () => {
           setMainCategories(uniqueMainCategories);
         } else {
           setProducts([]);
+
           setFilteredProducts([]);
         }
       } catch (error) {
@@ -61,11 +62,13 @@ const Shop = () => {
   // Effect to update available secondary categories when main category changes
   useEffect(() => {
     if (selectedMainCategory === "All") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSecondaryCategories([]);
       setSelectedSecondaryCategory("All");
     } else {
       const filteredForMain = products.filter(p => p.mainCategory === selectedMainCategory);
       const uniqueSec = ["All", ...new Set(filteredForMain.map(p => p.category?.trim()).filter(Boolean))];
+
       setSecondaryCategories(uniqueSec);
       if (!location.state?.selectedSecondaryCategory || location.state?.selectedMainCategory !== selectedMainCategory) {
           setSelectedSecondaryCategory("All");
@@ -76,11 +79,13 @@ const Shop = () => {
   // Effect to update available sub categories when secondary category changes
   useEffect(() => {
     if (selectedSecondaryCategory === "All") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSubCategories([]);
       setSelectedSubCategory("All");
     } else {
       const filteredForSec = products.filter(p => p.mainCategory === selectedMainCategory && p.category === selectedSecondaryCategory);
       const uniqueSub = ["All", ...new Set(filteredForSec.map(p => p.subCategory?.trim()).filter(Boolean))];
+
       setSubCategories(uniqueSub);
       setSelectedSubCategory("All");
     }
@@ -112,6 +117,7 @@ const Shop = () => {
         );
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFilteredProducts(filtered);
   }, [searchQuery, selectedMainCategory, selectedSecondaryCategory, selectedSubCategory, products]);
 
@@ -121,19 +127,19 @@ const Shop = () => {
 
       <div className="bg-white py-16 border-b border-gray-100">
          <div className="max-w-7xl mx-auto px-4 text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+            <div
+
+
+
             >
               <h1 className="text-4xl font-serif text-gray-900 mb-4">The Collection</h1>
               <p className="text-gray-500 max-w-2xl mx-auto font-light">Explore our complete range of exquisite jewelry and gifts.</p>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
+            <div
+
+
+
               className="max-w-4xl mx-auto mt-8 flex flex-col items-center gap-6"
             >
                 {/* Main Category Filter */}
@@ -204,7 +210,7 @@ const Shop = () => {
                     />
                     <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                 </div>
-            </motion.div>
+            </div>
          </div>
       </div>
 

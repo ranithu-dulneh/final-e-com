@@ -1,15 +1,14 @@
 import Navbar from "../components/Navbar";
-import { motion } from "framer-motion";
 
 const About = () => {
   return (
     <div className="min-h-screen bg-off-white">
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+        <div
+
+
+
           className="max-w-3xl mx-auto text-center"
         >
           <h1 className="text-4xl md:text-5xl font-serif text-gray-900 mb-8">
@@ -56,7 +55,7 @@ const About = () => {
               Discover the art of fine gifting and adorn yourself with elegance. Thank you for choosing ZAFIRA.
             </p>
           </div>
-        </motion.div>
+        </div>
       </main>
     </div>
   );

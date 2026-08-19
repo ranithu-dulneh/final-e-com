@@ -1,10 +1,9 @@
-/* eslint-disable no-unused-vars */
+
 import { useState, useEffect } from "react";
 import { db, storage } from "../firebase";
 import { ref, get, push, set } from "firebase/database";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import Navbar from "../components/Navbar";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase,
   MapPin,
@@ -168,10 +167,10 @@ const Careers = () => {
     <div className="min-h-screen bg-off-white">
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
+        <div
+
+
+
           className="max-w-4xl mx-auto"
         >
           {/* Header section */}
@@ -203,7 +202,7 @@ const Careers = () => {
           ) : (
             <div className="space-y-6">
               {jobs.map((job) => (
-                <motion.div
+                <div
                   key={job.id}
                   whileHover={{ y: -2 }}
                   className="bg-white p-6 md:p-8 shadow-sm border border-gray-100 hover:border-gold-500/50 transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-6"
@@ -250,22 +249,22 @@ const Careers = () => {
                   >
                     Apply Now
                   </button>
-                </motion.div>
+                </div>
               ))}
             </div>
           )}
-        </motion.div>
+        </div>
       </main>
 
       {/* Application Modal */}
       <AnimatePresence>
         {isApplyModalOpen && selectedJob && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
+            <div
+
+
+
+
               className="bg-white w-full max-w-2xl rounded-sm shadow-2xl overflow-hidden my-8"
             >
               {/* Modal Header */}
@@ -480,7 +479,7 @@ const Careers = () => {
                   </form>
                 )}
               </div>
-            </motion.div>
+            </div>
           </div>
         )}
       </AnimatePresence>

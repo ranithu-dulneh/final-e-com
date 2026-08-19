@@ -1,6 +1,6 @@
+import { useScroll, useTransform } from "framer-motion";
 import { Link } from "react-router-dom";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef, useState, useEffect } from "react";
+import { useRef } from "react";
 import heroBg from "../assets/hero-bg.png";
 
 const TypewriterText = ({ text, className, delay = 0 }) => {

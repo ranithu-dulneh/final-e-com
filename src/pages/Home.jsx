@@ -1,4 +1,3 @@
-import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Hero from "../components/Hero";
 import ProductGallery from "../components/ProductGallery";

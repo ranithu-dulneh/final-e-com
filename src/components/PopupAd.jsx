@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { db } from "../firebase";
 import { ref, get } from "firebase/database";

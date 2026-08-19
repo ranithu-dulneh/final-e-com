@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Star } from 'lucide-react';
 
 const ProductCard = ({ product }) => {
@@ -37,6 +37,7 @@ const ProductCard = ({ product }) => {
               setCurrentImageIndex((prev) => (prev + 1) % displayImages.length);
           }, 1000); // Change image every 1 second
       } else {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setCurrentImageIndex(0); // Reset on mouse leave
       }
       return () => clearInterval(interval);

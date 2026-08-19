@@ -6,7 +6,7 @@ import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage
 import { storage } from "../firebase";
 import Navbar from "../components/Navbar";
 import ProductCard from "../components/ProductCard";
-import { ShoppingBag, CreditCard, ChevronLeft, ChevronRight, Truck, RefreshCw, ShieldCheck, Star, ChevronDown, ChevronUp } from "lucide-react";
+import {  ShoppingBag, CreditCard, ChevronLeft, ChevronRight, Truck, RefreshCw, ShieldCheck, Star, ChevronDown, ChevronUp , X } from "lucide-react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 
@@ -60,6 +60,7 @@ const ProductDetails = () => {
 
   useEffect(() => {
     if (currentUser && currentUser.displayName) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReviewName(currentUser.displayName);
     }
   }, [currentUser]);
@@ -170,10 +171,12 @@ const ProductDetails = () => {
       const index = images.findIndex((img) => img === url);
 
       if (index !== -1) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setCurrentImageIndex(index);
       } else {
         // Add to the front of the list and set as current
         setImages((prev) => [url, ...prev]);
+
         setCurrentImageIndex(0);
       }
     }
@@ -208,6 +211,7 @@ const ProductDetails = () => {
 
       if (product.reviews) {
           const reviewed = Object.values(product.reviews).some(rev => rev.userId === currentUser.uid);
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setUserHasReviewed(reviewed);
       }
     }
@@ -300,6 +304,7 @@ const ProductDetails = () => {
                 [newReviewRef.key]: newReview
             }
         }));
+
         setUserHasReviewed(true);
         setReviewRating(0);
         setReviewComment("");
@@ -345,10 +350,12 @@ const ProductDetails = () => {
   };
 
   const nextImage = () => {
+
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
 
   const prevImage = () => {
+
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
   };
 
@@ -420,6 +427,7 @@ const ProductDetails = () => {
                 {images.map((img, idx) => (
                   <button
                     key={idx}
+
                     onClick={() => setCurrentImageIndex(idx)}
                     className={`relative w-20 h-20 flex-shrink-0 overflow-hidden border-2 transition-all ${
                       currentImageIndex === idx ? 'border-gold-600' : 'border-transparent hover:border-gray-300'
@@ -546,6 +554,7 @@ const ProductDetails = () => {
                                            className="w-full border border-gray-200 p-2 rounded-sm text-sm focus:outline-none focus:border-gray-500 bg-white"
                                            placeholder="Enter your name to be published"
                                            value={reviewName}
+
                                            onChange={(e) => setReviewName(e.target.value)}
                                        />
                                    </div>

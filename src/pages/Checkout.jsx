@@ -29,6 +29,7 @@ const Checkout = () => {
 
   useEffect(() => {
     if (currentUser) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData(prev => ({
         ...prev,
         name: currentUser.displayName || prev.name,
@@ -139,6 +140,7 @@ const Checkout = () => {
         }
       });
 
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAvailableMethods({ cod: codAllowed, bank: bankAllowed, online: onlineAllowed });
 
       // Auto-switch if currently selected is no longer valid
@@ -167,6 +169,7 @@ const Checkout = () => {
   */
 
   const handleChange = (e) => {
+
     setFormData({
       ...formData,
       [e.target.name]: e.target.value

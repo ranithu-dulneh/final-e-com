@@ -1,6 +1,5 @@
 import Navbar from "../components/Navbar";
 import { Facebook, Instagram, Mail, Phone } from "lucide-react";
-import { motion } from "framer-motion";
 
 const Contact = () => {
   return (

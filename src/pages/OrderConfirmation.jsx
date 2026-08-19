@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import { CheckCircle, ShoppingBag } from "lucide-react";
-import { motion } from "framer-motion";
 
 const OrderConfirmation = () => {
   const location = useLocation();
